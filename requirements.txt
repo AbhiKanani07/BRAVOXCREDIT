@@ -1,0 +1,7 @@
+# Domain core (engine, providers, audit, storage, config) = pure stdlib.
+# These are only for the web layer (creditvox/api.py, creditvox/schemas.py).
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+
+python-dotenv>=1.0
