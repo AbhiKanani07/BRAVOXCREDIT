@@ -150,6 +150,12 @@ async def unhandled_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"error": "internal", "detail": detail})
 
 
+# --- Static assets (logo, images, etc. served from the web/ folder) --------
+from fastapi.staticfiles import StaticFiles
+if WEB_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(WEB_DIR)), name="assets")
+
+
 # --- Frontend ---------------------------------------------------------------
 @app.get("/", include_in_schema=False)
 def frontend():
