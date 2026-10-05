@@ -17,7 +17,7 @@ import time
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Header, HTTPException
+from fastapi import FastAPI, Request, Header, HTTPException, Response, Cookie
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 
@@ -25,12 +25,16 @@ from .config import settings
 from .engine import CARD_MATRIX, UserProfile, match_cards
 from .audit import AuditLogger, ConsentStore, ConsentError
 from .feedback import FeedbackStore, FeedbackError
+from .auth import AuthStore, AuthError
 from .storage import init_db
 from .providers import ApplicantRef, get_provider
 from .schemas import (
     ConsentIn, ConsentOut, MatchResult, ProfileIn,
     ReportMatchIn, ReportMatchOut, FeedbackIn, FeedbackOut, CardStat,
+    RegisterIn, LoginIn, UserOut, HistoryItem,
 )
+
+SESSION_COOKIE = "cvx_session"
 
 # --- Logging ---------------------------------------------------------------
 logging.basicConfig(
@@ -48,7 +52,24 @@ consent_store = ConsentStore(
 )
 audit = AuditLogger(settings.db_path)
 feedback_store = FeedbackStore(settings.db_path)
+auth_store = AuthStore(settings.db_path, session_ttl_days=settings.session_ttl_days)
 _VALID_CARD_IDS = {c.id for c in CARD_MATRIX}
+
+
+def _current_user(token: str | None) -> dict | None:
+    """Optional auth: returns the logged-in user or None. Never raises."""
+    try:
+        return auth_store.user_for_session(token)
+    except Exception:
+        return None
+
+
+def _set_session_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=SESSION_COOKIE, value=token, httponly=True,
+        secure=settings.is_prod, samesite="lax",
+        max_age=settings.session_ttl_days * 86400, path="/",
+    )
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
@@ -113,6 +134,12 @@ async def feedback_error_handler(request: Request, exc: FeedbackError):
                                                   "detail": str(exc)})
 
 
+@app.exception_handler(AuthError)
+async def auth_error_handler(request: Request, exc: AuthError):
+    return JSONResponse(status_code=400, content={"error": "auth_error",
+                                                  "detail": str(exc)})
+
+
 @app.exception_handler(Exception)
 async def unhandled_handler(request: Request, exc: Exception):
     # Never leak internals in prod.
@@ -162,13 +189,23 @@ def match_direct(
     profile: ProfileIn,
     include_ineligible: bool = False,
     rank_by: str = "approval",
+    cvx_session: str | None = Cookie(default=None),
 ):
     """
     Stateless match against caller-supplied numbers. This is the free tier and
-    the fallback; it performs NO external pull and needs NO consent.
+    the fallback; it performs NO external pull and needs NO consent. If the
+    caller is logged in, the check is saved to their history.
     """
     up = UserProfile(**profile.model_dump())
-    return match_cards(up, include_ineligible=include_ineligible, rank_by=rank_by)
+    results = match_cards(up, include_ineligible=include_ineligible, rank_by=rank_by)
+    user = _current_user(cvx_session)
+    if user:
+        try:
+            auth_store.save_check(user["user_id"], profile.model_dump(),
+                                  rank_by, "manual", results)
+        except Exception:
+            log.exception("failed to save check history")
+    return results
 
 
 # --- Consent ----------------------------------------------------------------
@@ -195,7 +232,10 @@ def grant_consent(body: ConsentIn, request: Request) -> ConsentOut:
 
 # --- Match from a (consented) credit report ---------------------------------
 @app.post("/v1/match-from-report", response_model=ReportMatchOut)
-def match_from_report(body: ReportMatchIn) -> ReportMatchOut:
+def match_from_report(
+    body: ReportMatchIn,
+    cvx_session: str | None = Cookie(default=None),
+) -> ReportMatchOut:
     """
     The real pre-approval flow:
       consent -> provider fetches a normalized CreditReport -> map to profile
@@ -203,6 +243,7 @@ def match_from_report(body: ReportMatchIn) -> ReportMatchOut:
 
     The active provider is set by CREDIT_PROVIDER (manual | bureau_mock | bureau).
     """
+    user = _current_user(cvx_session)
     consent = consent_store.require(body.consent_id, purpose="prequalification")
 
     provider = get_provider(settings.credit_provider)
@@ -227,6 +268,13 @@ def match_from_report(body: ReportMatchIn) -> ReportMatchOut:
         include_ineligible=body.include_ineligible,
         rank_by=body.rank_by,
     )
+
+    if user:
+        try:
+            auth_store.save_check(user["user_id"], report.to_profile().to_dict(),
+                                  body.rank_by, report.source, matches)
+        except Exception:
+            log.exception("failed to save check history")
 
     return ReportMatchOut(
         report={
@@ -288,3 +336,43 @@ def feedback_stats(x_admin_token: str | None = Header(default=None)) -> list[dic
     """
     _require_admin(x_admin_token)
     return feedback_store.stats()
+
+
+# --- Authentication (optional; enables saved history) ----------------------
+@app.post("/v1/auth/register", response_model=UserOut)
+def register(body: RegisterIn, response: Response) -> UserOut:
+    user = auth_store.register(body.email, body.password)
+    token = auth_store.create_session(user["user_id"])
+    _set_session_cookie(response, token)
+    return UserOut(**user)
+
+
+@app.post("/v1/auth/login", response_model=UserOut)
+def login(body: LoginIn, response: Response) -> UserOut:
+    user = auth_store.authenticate(body.email, body.password)
+    token = auth_store.create_session(user["user_id"])
+    _set_session_cookie(response, token)
+    return UserOut(**user)
+
+
+@app.post("/v1/auth/logout")
+def logout(response: Response, cvx_session: str | None = Cookie(default=None)) -> dict:
+    auth_store.delete_session(cvx_session)
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return {"ok": True}
+
+
+@app.get("/v1/auth/me", response_model=UserOut)
+def me(cvx_session: str | None = Cookie(default=None)) -> UserOut:
+    user = _current_user(cvx_session)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not logged in.")
+    return UserOut(**user)
+
+
+@app.get("/v1/history", response_model=list[HistoryItem])
+def history(cvx_session: str | None = Cookie(default=None)) -> list[dict]:
+    user = _current_user(cvx_session)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not logged in.")
+    return auth_store.history(user["user_id"])

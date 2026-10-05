@@ -118,9 +118,41 @@ CREATE TABLE IF NOT EXISTS feedback (
     notes                      TEXT
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    user_id       TEXT PRIMARY KEY,
+    email         TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    session_hash  TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL,
+    created_at    TEXT NOT NULL,
+    expires_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS saved_checks (
+    check_id          TEXT PRIMARY KEY,
+    user_id           TEXT NOT NULL,
+    created_at        TEXT NOT NULL,
+    score             INTEGER,
+    utilization       REAL,
+    inquiries         INTEGER,
+    new_accounts_24mo INTEGER,
+    rank_by           TEXT,
+    source            TEXT,
+    top_card_id       TEXT,
+    top_card_name     TEXT,
+    top_probability   REAL,
+    result_count      INTEGER
+);
+
 CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
 CREATE INDEX IF NOT EXISTS idx_consent_token ON consents(consumer_token_hash);
 CREATE INDEX IF NOT EXISTS idx_feedback_card ON feedback(card_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_checks_user ON saved_checks(user_id, created_at);
 """
 
 

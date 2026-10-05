@@ -18,7 +18,7 @@ IMPORTANT (read before shipping):
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field, replace
 from enum import IntEnum
 from typing import Optional
 
@@ -63,6 +63,19 @@ def score_to_tier(score: int) -> ScoreTier:
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
+class CardFeatures:
+    """Marketing/benefit data shown to users. Hand-entered today; shaped exactly
+    like an affiliate data feed so a feed can populate it later with no code
+    change. `last_updated` makes staleness visible instead of hidden."""
+    rewards: str = ""           # concise earning summary
+    signup_bonus: str = ""      # welcome offer (the most volatile field)
+    intro_apr: str = ""         # intro APR offer, if any
+    highlight: str = ""         # one-line "why this card"
+    affiliate_url: str = ""     # referral link (dormant until you join a program)
+    last_updated: str = ""      # ISO date the data was last verified
+
+
+@dataclass(frozen=True)
 class Card:
     id: str
     name: str
@@ -74,9 +87,10 @@ class Card:
     annual_fee: int = 0
     chase_5_24: bool = False  # optional issuer rule: auto-deny if >=5 new accts/24mo
     image_url: str = ""       # licensed card art URL; blank -> frontend placeholder
+    features: CardFeatures = field(default_factory=CardFeatures)
 
     def to_dict(self) -> dict:
-        d = asdict(self)
+        d = asdict(self)              # recurses into CardFeatures automatically
         d["min_tier"] = self.min_tier.name
         return d
 
@@ -353,7 +367,7 @@ CARD_MATRIX: list[Card] = [
         min_tier=ScoreTier.EXCELLENT,
         max_utilization=15.0,
         max_inquiries=3,
-        annual_fee=550,
+        annual_fee=795,   # relaunched 2026 ($550 -> $795)
         chase_5_24=True,
     ),
     Card(
@@ -366,6 +380,172 @@ CARD_MATRIX: list[Card] = [
         max_inquiries=4,
         annual_fee=695,
     ),
+]
+
+
+# ---------------------------------------------------------------------------
+# 2b. CARD FEATURES
+# ---------------------------------------------------------------------------
+# Keyed by card id and merged into the matrix below. This is the single place
+# to edit marketing data, and the shape an affiliate feed would populate.
+# Base earning structures are stable; signup bonuses drift monthly, so where a
+# figure isn't freshly verified it says "See issuer for current offer".
+_TODAY = "2026-10-05"
+
+CARD_FEATURES: dict[str, CardFeatures] = {
+    "opensky_secured": CardFeatures(
+        rewards="No rewards; builds credit with a refundable deposit",
+        signup_bonus="None", intro_apr="None",
+        highlight="No credit check to apply — an accessible starting point.",
+        last_updated=_TODAY),
+    "capone_platinum_secured": CardFeatures(
+        rewards="No rewards; a path toward an unsecured card",
+        signup_bonus="None", intro_apr="None",
+        highlight="Refundable deposit from $49 with automatic credit-line reviews.",
+        last_updated=_TODAY),
+    "discover_it_secured": CardFeatures(
+        rewards="2% at gas & dining (up to $1,000/qtr), 1% elsewhere",
+        signup_bonus="First-year Cashback Match doubles all cash back",
+        intro_apr="None",
+        highlight="Rare rewards on a secured card, plus Cashback Match.",
+        last_updated=_TODAY),
+    "capone_quicksilver_secured": CardFeatures(
+        rewards="1.5% cash back on every purchase",
+        signup_bonus="None", intro_apr="None",
+        highlight="Flat-rate rewards while you rebuild credit.",
+        last_updated=_TODAY),
+    "discover_it_student": CardFeatures(
+        rewards="5% rotating categories (activate, up to $1,500/qtr), 1% elsewhere",
+        signup_bonus="First-year Cashback Match doubles all cash back",
+        intro_apr="See issuer for current intro APR",
+        highlight="Strong rewards for students building credit.",
+        last_updated=_TODAY),
+    "capone_savorone_student": CardFeatures(
+        rewards="3% dining, entertainment, streaming & groceries; 1% elsewhere",
+        signup_bonus="See issuer for current offer", intro_apr="None",
+        highlight="Great everyday rewards for students; no annual fee.",
+        last_updated=_TODAY),
+    "chase_freedom_rise": CardFeatures(
+        rewards="1.5% cash back on all purchases",
+        signup_bonus="See issuer for current offer", intro_apr="None",
+        highlight="Designed as a first Chase card to start your credit journey.",
+        last_updated=_TODAY),
+    "bofa_travel_student": CardFeatures(
+        rewards="1.5x points on all purchases, points never expire",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="No annual fee and no foreign transaction fees.",
+        last_updated=_TODAY),
+    "capone_platinum": CardFeatures(
+        rewards="No rewards; unsecured credit building",
+        signup_bonus="None", intro_apr="None",
+        highlight="Unsecured starter card with automatic credit-line reviews.",
+        last_updated=_TODAY),
+    "discover_it_cashback": CardFeatures(
+        rewards="5% rotating categories (activate, up to $1,500/qtr), 1% elsewhere",
+        signup_bonus="First-year Cashback Match doubles all cash back",
+        intro_apr="See issuer for current intro APR",
+        highlight="Top no-fee rotating-category card with Cashback Match.",
+        last_updated=_TODAY),
+    "capone_quicksilver": CardFeatures(
+        rewards="1.5% on every purchase; 5% on Capital One Travel",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="Simple flat-rate cash back, no annual fee.",
+        last_updated=_TODAY),
+    "capone_savorone": CardFeatures(
+        rewards="3% dining, entertainment, streaming & groceries; 1% elsewhere",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="Best no-fee card for dining and going out.",
+        last_updated=_TODAY),
+    "chase_freedom_unlimited": CardFeatures(
+        rewards="1.5% all purchases, 5% Chase Travel, 3% dining & drugstores",
+        signup_bonus="$200 after $500 spend in first 3 months", intro_apr="None",
+        highlight="A 1.5% floor on everything plus Chase bonus categories.",
+        last_updated=_TODAY),
+    "chase_freedom_flex": CardFeatures(
+        rewards="5% rotating (activate, up to $1,500/qtr), 5% Chase Travel, "
+                "3% dining & drugstores, 1% elsewhere",
+        signup_bonus="$200 after $500 spend in first 3 months", intro_apr="None",
+        highlight="Rotating 5% categories with no annual fee.",
+        last_updated=_TODAY),
+    "citi_double_cash": CardFeatures(
+        rewards="2% total — 1% when you buy, 1% as you pay it off",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="The simplest high flat-rate cash back.",
+        last_updated=_TODAY),
+    "citi_custom_cash": CardFeatures(
+        rewards="5% on your top eligible category each cycle (up to $500), 1% else",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="Automatically rewards your top spending category.",
+        last_updated=_TODAY),
+    "wells_active_cash": CardFeatures(
+        rewards="2% cash back on all purchases",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="Flat 2% on everything with no annual fee.",
+        last_updated=_TODAY),
+    "bofa_customized_cash": CardFeatures(
+        rewards="3% in a category you choose + 2% groceries/wholesale "
+                "(up to $2,500/qtr combined), 1% elsewhere",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="Pick your 3% category; boosted with a BofA relationship.",
+        last_updated=_TODAY),
+    "amex_blue_cash_everyday": CardFeatures(
+        rewards="3% US supermarkets, US online retail & US gas "
+                "(up to $6,000/yr each), 1% elsewhere",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="Everyday cash back for groceries and gas, no annual fee.",
+        last_updated=_TODAY),
+    "capone_ventureone": CardFeatures(
+        rewards="1.25x miles on all purchases, 5x on Capital One Travel",
+        signup_bonus="See issuer for current offer", intro_apr="See issuer",
+        highlight="No-fee entry into Capital One miles.",
+        last_updated=_TODAY),
+    "chase_sapphire_preferred": CardFeatures(
+        rewards="5x Chase Travel; 3x dining, streaming, online groceries, gas & "
+                "EV charging, and vacation rentals; 2x other travel; 1x elsewhere",
+        signup_bonus="75,000 points after $5,000 in 3 months "
+                     "(100k limited-time offer may apply)",
+        intro_apr="None",
+        highlight="Refreshed June 2026: new 3x categories, $100 hotel credit, Apple TV.",
+        last_updated=_TODAY),
+    "capone_venture": CardFeatures(
+        rewards="2x miles on every purchase, 5x on Capital One Travel",
+        signup_bonus="See issuer for current offer", intro_apr="None",
+        highlight="Simple 2x miles on everything for travelers.",
+        last_updated=_TODAY),
+    "citi_strata_premier": CardFeatures(
+        rewards="3x air travel, hotels, restaurants, supermarkets, gas & EV "
+                "charging; 1x elsewhere",
+        signup_bonus="See issuer for current offer", intro_apr="None",
+        highlight="Broad 3x categories including everyday spend.",
+        last_updated=_TODAY),
+    "amex_gold": CardFeatures(
+        rewards="4x dining worldwide (up to $50k/yr), 4x US supermarkets "
+                "(up to $25k/yr), 3x flights, 5x prepaid hotels via Amex Travel",
+        signup_bonus="100,000 points after $8,000 in first 6 months",
+        intro_apr="None",
+        highlight="Up to ~$424 in annual credits offset the $325 fee.",
+        last_updated=_TODAY),
+    "capone_venture_x": CardFeatures(
+        rewards="2x miles on everything; 10x hotels & 5x flights via Capital One Travel",
+        signup_bonus="See issuer for current offer", intro_apr="None",
+        highlight="$300 annual travel credit + 10,000 anniversary miles offset most of the fee.",
+        last_updated=_TODAY),
+    "chase_sapphire_reserve": CardFeatures(
+        rewards="8x Chase Travel, 4x flights & hotels booked direct, 3x dining; 1x else",
+        signup_bonus="See issuer for current offer", intro_apr="None",
+        highlight="Relaunched 2026 at a $795 fee with expanded credits and lounge access.",
+        last_updated=_TODAY),
+    "amex_platinum": CardFeatures(
+        rewards="5x flights (direct or via Amex Travel) & 5x prepaid hotels via Amex Travel; 1x else",
+        signup_bonus="See issuer for current offer", intro_apr="None",
+        highlight="Premium travel: lounges, hotel status, and ~$1,500 in annual credits.",
+        last_updated=_TODAY),
+}
+
+# Merge features into the matrix (frozen dataclasses -> rebuild with replace()).
+CARD_MATRIX = [
+    replace(c, features=CARD_FEATURES[c.id]) if c.id in CARD_FEATURES else c
+    for c in CARD_MATRIX
 ]
 
 
@@ -470,6 +650,7 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
             "category": card.category,
             "annual_fee": card.annual_fee,
             "image_url": card.image_url,
+            "features": asdict(card.features),
             "eligible": False,
             "approval_probability": 0.0,
             "fit_score": 0.0,
@@ -518,6 +699,7 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
         "category": card.category,
         "annual_fee": card.annual_fee,
         "image_url": card.image_url,
+        "features": asdict(card.features),
         "eligible": True,
         "approval_probability": probability,
         "fit_score": fit_score,

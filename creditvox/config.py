@@ -11,7 +11,8 @@ from __future__ import annotations
 import os
 
 from dotenv import load_dotenv
-load_dotenv()
+
+load_dotenv()  # read .env into the environment (reliable, not uvicorn-dependent)
 
 
 def _csv(name: str, default: str) -> list[str]:
@@ -57,7 +58,13 @@ class Settings:
         self.disclosure_version: str = os.getenv("DISCLOSURE_VERSION", "2026-01-v1")
 
         self.log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
+
+        # Secret for admin-only endpoints (e.g. /v1/feedback/stats). If empty,
+        # those endpoints are DISABLED (fail closed) rather than left public.
         self.admin_token: str = os.getenv("ADMIN_TOKEN", "").strip()
+
+        # How long a login session cookie stays valid.
+        self.session_ttl_days: int = int(os.getenv("SESSION_TTL_DAYS", "30"))
 
     @property
     def is_prod(self) -> bool:

@@ -51,6 +51,7 @@ class MatchResult(BaseModel):
     category: str
     annual_fee: int
     image_url: str = ""
+    features: dict = Field(default_factory=dict)
     eligible: bool
     approval_probability: float
     fit_score: float
@@ -98,3 +99,30 @@ class CardStat(BaseModel):
     denied: int
     total: int
     approval_rate: Optional[float] = None
+
+
+class RegisterIn(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=8, max_length=200)
+
+
+class LoginIn(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=1, max_length=200)
+
+
+class UserOut(BaseModel):
+    user_id: str
+    email: str
+
+
+class HistoryItem(BaseModel):
+    created_at: str
+    score: Optional[int] = None
+    utilization: Optional[float] = None
+    inquiries: Optional[int] = None
+    rank_by: Optional[str] = None
+    source: Optional[str] = None
+    top_card_name: Optional[str] = None
+    top_probability: Optional[float] = None
+    result_count: Optional[int] = None

@@ -121,6 +121,13 @@
   .label-chip { font-size: 12px; font-weight: 600; color: var(--meter); }
   .reason { font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
 
+  .feat { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .feat .hl { font-size: 14px; color: var(--ink); margin: 0 0 8px; }
+  .feat dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+  .feat dt { color: var(--ink-soft); white-space: nowrap; }
+  .feat dd { margin: 0; color: var(--ink); }
+  .feat .stamp { margin-top: 8px; font-size: 11px; color: var(--ink-soft); }
+
   .fb { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); }
   .fb button {
     appearance: none; font: inherit; font-size: 13px; cursor: pointer;
@@ -135,11 +142,41 @@
 
   @media (prefers-reduced-motion: reduce) { .meter > i { transition: none; } }
   @media (max-width: 520px) { .grid, .grid.four { grid-template-columns: repeat(2, 1fr); } }
+
+  header { display: flex; align-items: center; justify-content: space-between; }
+  .auth-bar { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .auth-bar .email { color: var(--ink-soft); }
+  .linkbtn { appearance: none; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: 14px; color: var(--accent); padding: 6px 4px; }
+  .linkbtn:hover { text-decoration: underline; }
+  .linkbtn.solid { background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 9px; }
+  .linkbtn.solid:hover { background: var(--accent-press); text-decoration: none; }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(15,30,56,.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 14px; padding: 26px; width: 100%; max-width: 380px; }
+  .modal h3 { font-family: "Space Grotesk", sans-serif; margin: 0 0 4px; font-size: 20px; }
+  .modal p.sub { margin: 0 0 18px; color: var(--ink-soft); font-size: 14px; }
+  .modal label { display: block; font-size: 13px; color: var(--ink-soft); margin: 12px 0 6px; }
+  .modal input { width: 100%; font: inherit; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+  .modal .row { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; gap: 12px; }
+  .modal .msg { font-size: 13px; color: #b42318; min-height: 1.1em; margin-top: 10px; }
+  .modal .switch { font-size: 13px; color: var(--ink-soft); margin-top: 16px; text-align: center; }
+
+  .history { margin-top: 30px; }
+  .history h2 { font-family: "Space Grotesk", sans-serif; font-size: 15px; font-weight: 500; color: var(--ink-soft); margin: 0 0 12px; }
+  .hist-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; font-size: 14px; }
+  .hist-row .when { color: var(--ink-soft); font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header><div class="mark">Bravox<span>Credit</span></div></header>
+  <header>
+    <div class="mark">Bravox<span>Credit</span></div>
+    <div class="auth-bar" id="auth-bar">
+      <button class="linkbtn" id="btn-login">Log in</button>
+      <button class="linkbtn solid" id="btn-signup">Sign up</button>
+    </div>
+  </header>
 
   <section class="hero">
     <h1>See which cards say yes before you apply.</h1>
@@ -194,11 +231,33 @@
     <div id="cards"></div>
   </section>
 
+  <section class="history" id="history" hidden>
+    <h2>Your recent checks</h2>
+    <div id="hist-rows"></div>
+  </section>
+
   <p class="foot">
     Estimates only, not a guarantee of approval or a credit decision. Approval odds are
     modeled from public underwriting patterns, not a real credit report. CreditVox is not
     a lender or a credit reporting agency.
   </p>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="modal-title">Log in</h3>
+    <p class="sub" id="modal-sub">Save your checks and track them over time.</p>
+    <label for="m-email">Email</label>
+    <input id="m-email" type="email" autocomplete="email" />
+    <label for="m-pass">Password</label>
+    <input id="m-pass" type="password" autocomplete="current-password" />
+    <p class="msg" id="modal-msg"></p>
+    <div class="row">
+      <button class="linkbtn" id="modal-cancel">Cancel</button>
+      <button class="linkbtn solid" id="modal-submit">Log in</button>
+    </div>
+    <p class="switch" id="modal-switch"></p>
+  </div>
 </div>
 
 <script>
@@ -258,6 +317,22 @@
       <rect x="6" y="9" width="11" height="8" rx="1.5" fill="rgba(255,255,255,.55)"/>
       <text x="6" y="36" fill="rgba(255,255,255,.92)" font-family="Inter,sans-serif" font-size="5.5" font-weight="600">${label}</text>
     </svg>`;
+  }
+
+  function featuresBlock(m) {
+    const f = m.features || {};
+    if (!f.rewards && !f.highlight && !f.signup_bonus) return "";
+    const rows = [];
+    if (f.rewards) rows.push(`<dt>Rewards</dt><dd>${esc(f.rewards)}</dd>`);
+    if (f.signup_bonus && f.signup_bonus !== "None")
+      rows.push(`<dt>Welcome</dt><dd>${esc(f.signup_bonus)}</dd>`);
+    if (f.intro_apr && !/^(none|see issuer)/i.test(f.intro_apr))
+      rows.push(`<dt>Intro APR</dt><dd>${esc(f.intro_apr)}</dd>`);
+    return `<div class="feat">
+      ${f.highlight ? `<p class="hl">${esc(f.highlight)}</p>` : ""}
+      ${rows.length ? `<dl>${rows.join("")}</dl>` : ""}
+      ${f.last_updated ? `<p class="stamp">Features as of ${esc(f.last_updated)} — verify current terms with the issuer.</p>` : ""}
+    </div>`;
   }
 
   function setStatus(msg, isError) {
@@ -322,6 +397,7 @@
           <span>${m.category.replace("_", " ")}</span>
         </div>
         ${!eligible && m.reasons?.length ? `<p class="reason">${m.reasons[0]}</p>` : ""}
+        ${eligible ? featuresBlock(m) : ""}
         ${eligible ? `<div class="fb" data-card="${m.card_id}" data-pct="${pct}">
           <span>Applied for this?</span>
           <button data-outcome="approved">Approved</button>
@@ -406,6 +482,105 @@
     }
   }
   $("check").onclick = check;
+  // after a successful check, refresh history if logged in
+  const _origRender = render;
+  render = function (m, meta) { _origRender(m, meta); if (currentUser) loadHistory(); };
+
+  // ---- Auth ----
+  let currentUser = null;
+  let modalMode = "login"; // "login" | "signup"
+
+  function renderAuthBar() {
+    const bar = $("auth-bar");
+    if (currentUser) {
+      bar.innerHTML = `<span class="email">${esc(currentUser.email)}</span>
+        <button class="linkbtn" id="btn-logout">Log out</button>`;
+      $("btn-logout").onclick = logout;
+      loadHistory();
+    } else {
+      bar.innerHTML = `<button class="linkbtn" id="btn-login">Log in</button>
+        <button class="linkbtn solid" id="btn-signup">Sign up</button>`;
+      $("btn-login").onclick = () => openModal("login");
+      $("btn-signup").onclick = () => openModal("signup");
+      $("history").hidden = true;
+    }
+  }
+
+  function openModal(m) {
+    modalMode = m;
+    $("modal-title").textContent = m === "signup" ? "Create your account" : "Log in";
+    $("modal-sub").textContent = m === "signup"
+      ? "Save your checks and track them over time." : "Welcome back.";
+    $("modal-submit").textContent = m === "signup" ? "Sign up" : "Log in";
+    $("modal-switch").innerHTML = m === "signup"
+      ? `Already have an account? <button class="linkbtn" id="m-switch">Log in</button>`
+      : `New here? <button class="linkbtn" id="m-switch">Create an account</button>`;
+    $("m-switch").onclick = () => openModal(m === "signup" ? "login" : "signup");
+    $("modal-msg").textContent = "";
+    $("modal-bg").classList.add("open");
+    $("m-email").focus();
+  }
+  function closeModal() { $("modal-bg").classList.remove("open"); }
+
+  async function submitAuth() {
+    const email = $("m-email").value.trim();
+    const password = $("m-pass").value;
+    const path = modalMode === "signup" ? "/v1/auth/register" : "/v1/auth/login";
+    $("modal-submit").disabled = true;
+    try {
+      currentUser = await postJSON(path, { email, password });
+      closeModal();
+      $("m-pass").value = "";
+      renderAuthBar();
+    } catch (e) {
+      $("modal-msg").textContent = e.message;
+    } finally {
+      $("modal-submit").disabled = false;
+    }
+  }
+
+  async function logout() {
+    try { await postJSON("/v1/auth/logout", {}); } catch (e) {}
+    currentUser = null;
+    renderAuthBar();
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch(API_BASE + "/v1/history");
+      if (!res.ok) return;
+      const rows = await res.json();
+      const host = $("hist-rows");
+      if (!rows.length) { $("history").hidden = true; return; }
+      host.innerHTML = rows.map(r => {
+        const when = new Date(r.created_at).toLocaleString();
+        const top = r.top_card_name
+          ? `${esc(r.top_card_name)} · ${r.top_probability ? r.top_probability.toFixed(0) + "%" : ""}`
+          : "no eligible cards";
+        return `<div class="hist-row">
+          <div>Score ${r.score ?? "—"} · ${r.utilization ?? "—"}% util · ${r.inquiries ?? "—"} inq
+            <div class="when">${when} · ${r.result_count ?? 0} matches</div></div>
+          <div style="text-align:right">${top}</div>
+        </div>`;
+      }).join("");
+      $("history").hidden = false;
+    } catch (e) {}
+  }
+
+  $("modal-submit").onclick = submitAuth;
+  $("modal-cancel").onclick = closeModal;
+  $("modal-bg").onclick = (e) => { if (e.target === $("modal-bg")) closeModal(); };
+  $("m-pass").addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
+  $("btn-login").onclick = () => openModal("login");
+  $("btn-signup").onclick = () => openModal("signup");
+
+  // on load, check if already logged in
+  (async () => {
+    try {
+      const res = await fetch(API_BASE + "/v1/auth/me");
+      if (res.ok) { currentUser = await res.json(); renderAuthBar(); }
+    } catch (e) {}
+  })();
 </script>
 </body>
 </html>
