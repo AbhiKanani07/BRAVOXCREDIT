@@ -67,12 +67,13 @@ class Card:
     id: str
     name: str
     issuer: str
-    category: str            # starter | cash_back | travel
+    category: str            # starter | student | cash_back | travel
     min_tier: ScoreTier      # hard gate
     max_utilization: float   # max aggregate utilization % the profile tolerates
     max_inquiries: int       # max hard inquiries (trailing ~24mo) tolerated
     annual_fee: int = 0
     chase_5_24: bool = False  # optional issuer rule: auto-deny if >=5 new accts/24mo
+    image_url: str = ""       # licensed card art URL; blank -> frontend placeholder
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -80,15 +81,102 @@ class Card:
         return d
 
 
+# NOTE: thresholds are heuristic estimates from public community data, not
+# published issuer cutoffs. To add a card, copy a block and fill it in. To add
+# real card art later, set image_url to a licensed image (from your affiliate
+# program); blank renders a generated placeholder in the frontend.
 CARD_MATRIX: list[Card] = [
+    # --- Secured / starter (POOR: 300-579) ---------------------------------
+    Card(
+        id="opensky_secured",
+        name="OpenSky Secured Visa",
+        issuer="Capital Bank",
+        category="starter",
+        min_tier=ScoreTier.POOR,
+        max_utilization=95.0,   # no credit check product; extremely forgiving
+        max_inquiries=10,
+        annual_fee=35,
+    ),
     Card(
         id="capone_platinum_secured",
         name="Capital One Platinum Secured",
         issuer="Capital One",
         category="starter",
         min_tier=ScoreTier.POOR,
-        max_utilization=95.0,   # secured/starter product is very forgiving
+        max_utilization=95.0,
         max_inquiries=6,
+        annual_fee=0,
+    ),
+    Card(
+        id="discover_it_secured",
+        name="Discover it Secured",
+        issuer="Discover",
+        category="starter",
+        min_tier=ScoreTier.POOR,
+        max_utilization=90.0,
+        max_inquiries=6,
+        annual_fee=0,
+    ),
+    Card(
+        id="capone_quicksilver_secured",
+        name="Capital One Quicksilver Secured",
+        issuer="Capital One",
+        category="starter",
+        min_tier=ScoreTier.POOR,
+        max_utilization=90.0,
+        max_inquiries=6,
+        annual_fee=0,
+    ),
+    # --- Student (FAIR: 580-669) -------------------------------------------
+    Card(
+        id="discover_it_student",
+        name="Discover it Student Cash Back",
+        issuer="Discover",
+        category="student",
+        min_tier=ScoreTier.FAIR,
+        max_utilization=60.0,
+        max_inquiries=5,
+        annual_fee=0,
+    ),
+    Card(
+        id="capone_savorone_student",
+        name="Capital One SavorOne Student",
+        issuer="Capital One",
+        category="student",
+        min_tier=ScoreTier.FAIR,
+        max_utilization=55.0,
+        max_inquiries=5,
+        annual_fee=0,
+    ),
+    Card(
+        id="chase_freedom_rise",
+        name="Chase Freedom Rise",
+        issuer="Chase",
+        category="student",
+        min_tier=ScoreTier.FAIR,
+        max_utilization=50.0,
+        max_inquiries=5,
+        annual_fee=0,
+    ),
+    Card(
+        id="bofa_travel_student",
+        name="BofA Travel Rewards for Students",
+        issuer="Bank of America",
+        category="student",
+        min_tier=ScoreTier.FAIR,
+        max_utilization=50.0,
+        max_inquiries=5,
+        annual_fee=0,
+    ),
+    # --- Fair-to-good unsecured cash back ----------------------------------
+    Card(
+        id="capone_platinum",
+        name="Capital One Platinum",
+        issuer="Capital One",
+        category="starter",
+        min_tier=ScoreTier.FAIR,
+        max_utilization=70.0,
+        max_inquiries=5,
         annual_fee=0,
     ),
     Card(
@@ -101,9 +189,20 @@ CARD_MATRIX: list[Card] = [
         max_inquiries=5,
         annual_fee=0,
     ),
+    # --- Good (670-739) cash back ------------------------------------------
     Card(
         id="capone_quicksilver",
         name="Capital One Quicksilver",
+        issuer="Capital One",
+        category="cash_back",
+        min_tier=ScoreTier.GOOD,
+        max_utilization=40.0,
+        max_inquiries=4,
+        annual_fee=0,
+    ),
+    Card(
+        id="capone_savorone",
+        name="Capital One SavorOne",
         issuer="Capital One",
         category="cash_back",
         min_tier=ScoreTier.GOOD,
@@ -123,6 +222,17 @@ CARD_MATRIX: list[Card] = [
         chase_5_24=True,
     ),
     Card(
+        id="chase_freedom_flex",
+        name="Chase Freedom Flex",
+        issuer="Chase",
+        category="cash_back",
+        min_tier=ScoreTier.GOOD,
+        max_utilization=30.0,
+        max_inquiries=4,
+        annual_fee=0,
+        chase_5_24=True,
+    ),
+    Card(
         id="citi_double_cash",
         name="Citi Double Cash",
         issuer="Citi",
@@ -132,6 +242,57 @@ CARD_MATRIX: list[Card] = [
         max_inquiries=5,
         annual_fee=0,
     ),
+    Card(
+        id="citi_custom_cash",
+        name="Citi Custom Cash",
+        issuer="Citi",
+        category="cash_back",
+        min_tier=ScoreTier.GOOD,
+        max_utilization=35.0,
+        max_inquiries=5,
+        annual_fee=0,
+    ),
+    Card(
+        id="wells_active_cash",
+        name="Wells Fargo Active Cash",
+        issuer="Wells Fargo",
+        category="cash_back",
+        min_tier=ScoreTier.GOOD,
+        max_utilization=35.0,
+        max_inquiries=4,
+        annual_fee=0,
+    ),
+    Card(
+        id="bofa_customized_cash",
+        name="BofA Customized Cash Rewards",
+        issuer="Bank of America",
+        category="cash_back",
+        min_tier=ScoreTier.GOOD,
+        max_utilization=35.0,
+        max_inquiries=4,
+        annual_fee=0,
+    ),
+    Card(
+        id="amex_blue_cash_everyday",
+        name="Amex Blue Cash Everyday",
+        issuer="American Express",
+        category="cash_back",
+        min_tier=ScoreTier.GOOD,
+        max_utilization=30.0,
+        max_inquiries=4,
+        annual_fee=0,
+    ),
+    Card(
+        id="capone_ventureone",
+        name="Capital One VentureOne",
+        issuer="Capital One",
+        category="travel",
+        min_tier=ScoreTier.GOOD,
+        max_utilization=35.0,
+        max_inquiries=4,
+        annual_fee=0,
+    ),
+    # --- Very good (740-799) travel ----------------------------------------
     Card(
         id="chase_sapphire_preferred",
         name="Chase Sapphire Preferred",
@@ -144,6 +305,26 @@ CARD_MATRIX: list[Card] = [
         chase_5_24=True,
     ),
     Card(
+        id="capone_venture",
+        name="Capital One Venture",
+        issuer="Capital One",
+        category="travel",
+        min_tier=ScoreTier.VERY_GOOD,
+        max_utilization=30.0,
+        max_inquiries=4,
+        annual_fee=95,
+    ),
+    Card(
+        id="citi_strata_premier",
+        name="Citi Strata Premier",
+        issuer="Citi",
+        category="travel",
+        min_tier=ScoreTier.VERY_GOOD,
+        max_utilization=25.0,
+        max_inquiries=5,
+        annual_fee=95,
+    ),
+    Card(
         id="amex_gold",
         name="American Express Gold",
         issuer="American Express",
@@ -152,6 +333,17 @@ CARD_MATRIX: list[Card] = [
         max_utilization=25.0,
         max_inquiries=4,
         annual_fee=325,
+    ),
+    # --- Excellent (800+) premium ------------------------------------------
+    Card(
+        id="capone_venture_x",
+        name="Capital One Venture X",
+        issuer="Capital One",
+        category="travel",
+        min_tier=ScoreTier.EXCELLENT,
+        max_utilization=20.0,
+        max_inquiries=4,
+        annual_fee=395,
     ),
     Card(
         id="chase_sapphire_reserve",
@@ -163,6 +355,16 @@ CARD_MATRIX: list[Card] = [
         max_inquiries=3,
         annual_fee=550,
         chase_5_24=True,
+    ),
+    Card(
+        id="amex_platinum",
+        name="American Express Platinum",
+        issuer="American Express",
+        category="travel",
+        min_tier=ScoreTier.EXCELLENT,
+        max_utilization=20.0,
+        max_inquiries=4,
+        annual_fee=695,
     ),
 ]
 
@@ -267,6 +469,7 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
             "issuer": card.issuer,
             "category": card.category,
             "annual_fee": card.annual_fee,
+            "image_url": card.image_url,
             "eligible": False,
             "approval_probability": 0.0,
             "fit_score": 0.0,
@@ -314,6 +517,7 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
         "issuer": card.issuer,
         "category": card.category,
         "annual_fee": card.annual_fee,
+        "image_url": card.image_url,
         "eligible": True,
         "approval_probability": probability,
         "fit_score": fit_score,

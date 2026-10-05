@@ -23,9 +23,14 @@ def test_probability_bounds():
 
 def test_low_score_is_gated_out():
     weak = UserProfile(score=520, utilization=10, inquiries=0)  # POOR
-    ids = {m["card_id"] for m in match_cards(weak)}
-    # Only the secured starter should clear a POOR tier.
-    assert ids == {"capone_platinum_secured"}
+    matches = match_cards(weak)
+    # A POOR profile should only clear POOR-tier starter cards, never GOOD+.
+    assert matches, "expected at least one starter card for a POOR profile"
+    assert all(m["category"] == "starter" for m in matches)
+    ids = {m["card_id"] for m in matches}
+    assert "capone_platinum_secured" in ids          # known secured starter
+    assert "citi_double_cash" not in ids             # a GOOD-tier card must not leak in
+    assert "chase_sapphire_reserve" not in ids        # nor an EXCELLENT one
 
 
 def test_utilization_hard_gate():

@@ -109,7 +109,10 @@
     border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; background: var(--surface);
   }
   .card.ineligible { border-left-color: var(--line); opacity: .72; }
-  .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .card-head { display: flex; align-items: flex-start; gap: 14px; }
+  .thumb { flex: 0 0 auto; width: 68px; height: 43px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,30,56,.18); }
+  .thumb img, .thumb svg { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .card-top { flex: 1 1 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
   .card-name { font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 17px; }
   .pct { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 24px; color: var(--meter); font-variant-numeric: tabular-nums; }
   .meter { height: 8px; border-radius: 99px; background: var(--line); margin: 12px 0 10px; overflow: hidden; }
@@ -233,6 +236,30 @@
     return `hsl(${hue} 68% 42%)`;
   }
 
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  // Card art if we have a licensed image_url; otherwise a generated placeholder
+  // tile colored deterministically from the issuer name.
+  function cardThumb(m) {
+    if (m.image_url) {
+      return `<img src="${esc(m.image_url)}" alt="${esc(m.card_name)}" loading="lazy" />`;
+    }
+    let h = 0;
+    for (const ch of (m.issuer || "")) h = (h * 31 + ch.charCodeAt(0)) % 360;
+    const c1 = `hsl(${h} 42% 32%)`, c2 = `hsl(${(h + 24) % 360} 46% 22%)`;
+    const label = esc((m.issuer || "Card").slice(0, 16));
+    return `<svg viewBox="0 0 68 43" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="g${h}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/>
+      </linearGradient></defs>
+      <rect width="68" height="43" fill="url(#g${h})"/>
+      <rect x="6" y="9" width="11" height="8" rx="1.5" fill="rgba(255,255,255,.55)"/>
+      <text x="6" y="36" fill="rgba(255,255,255,.92)" font-family="Inter,sans-serif" font-size="5.5" font-weight="600">${label}</text>
+    </svg>`;
+  }
+
   function setStatus(msg, isError) {
     const el = $("status");
     el.textContent = msg || "";
@@ -281,9 +308,12 @@
       el.className = "card" + (eligible ? "" : " ineligible");
       el.style.setProperty("--meter", color);
       el.innerHTML = `
-        <div class="card-top">
-          <span class="card-name">${m.card_name}</span>
-          <span class="pct">${eligible ? val.toFixed(0) + (rankBy === "fit" ? "" : "%") : "—"}</span>
+        <div class="card-head">
+          <div class="thumb">${cardThumb(m)}</div>
+          <div class="card-top">
+            <span class="card-name">${esc(m.card_name)}</span>
+            <span class="pct">${eligible ? val.toFixed(0) + (rankBy === "fit" ? "" : "%") : "—"}</span>
+          </div>
         </div>
         <div class="meter"><i data-w="${eligible ? pct : 0}"></i></div>
         <div class="card-meta">

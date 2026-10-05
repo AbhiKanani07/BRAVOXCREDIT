@@ -50,6 +50,7 @@ class MatchResult(BaseModel):
     issuer: str
     category: str
     annual_fee: int
+    image_url: str = ""
     eligible: bool
     approval_probability: float
     fit_score: float
