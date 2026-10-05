@@ -741,6 +741,74 @@ def match_cards(
     return eligible
 
 
+# Thresholds for what counts as "almost qualifying" — close enough to be an
+# actionable nudge rather than a far-off aspiration.
+NEAR_SCORE_POINTS = 25     # within this many points of the required tier floor
+NEAR_UTIL_POINTS = 15      # within this many utilization points over the cap
+NEAR_INQ_COUNT = 1         # within this many inquiries over the cap
+
+
+def near_misses(profile: UserProfile, matrix: list[Card] = CARD_MATRIX) -> list[dict]:
+    """
+    Cards the user does NOT yet qualify for but is close to — with a concrete,
+    single-step hint for each. Powers the dashboard's "almost there" nudges.
+    A card qualifies as a near miss only if every failing factor is within a
+    small, achievable margin (so we never nudge someone toward a card that's
+    realistically years away).
+    """
+    user_tier = score_to_tier(profile.score)
+    out: list[dict] = []
+
+    for card in matrix:
+        hints: list[str] = []
+        achievable = True
+
+        # Score: only "near" if within NEAR_SCORE_POINTS of the required floor.
+        if user_tier < card.min_tier:
+            floor = TIER_FLOOR[card.min_tier]
+            gap = floor - profile.score
+            if 0 < gap <= NEAR_SCORE_POINTS:
+                hints.append(f"Raise your score ~{gap} points")
+            else:
+                achievable = False
+
+        # Utilization: near if only modestly over the cap.
+        if profile.utilization > card.max_utilization:
+            over = profile.utilization - card.max_utilization
+            if over <= NEAR_UTIL_POINTS:
+                hints.append(f"Lower utilization to {card.max_utilization:.0f}% or below")
+            else:
+                achievable = False
+
+        # Inquiries: near if just one too many (they age off over time).
+        if profile.inquiries > card.max_inquiries:
+            if profile.inquiries - card.max_inquiries <= NEAR_INQ_COUNT:
+                hints.append("Wait for an inquiry to age off")
+            else:
+                achievable = False
+
+        # 5/24 and other hard structural blocks aren't "near misses."
+        if card.chase_5_24 and profile.new_accounts_24mo is not None \
+                and profile.new_accounts_24mo >= 5:
+            achievable = False
+
+        if hints and achievable:
+            out.append({
+                "card_id": card.id,
+                "card_name": card.name,
+                "issuer": card.issuer,
+                "category": card.category,
+                "annual_fee": card.annual_fee,
+                "image_url": card.image_url,
+                "features": asdict(card.features),
+                "hints": hints,
+            })
+
+    # Fewest steps first = most achievable first.
+    out.sort(key=lambda c: len(c["hints"]))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # 5. DEMO
 # ---------------------------------------------------------------------------

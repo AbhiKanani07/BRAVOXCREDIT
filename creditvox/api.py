@@ -22,17 +22,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 
 from .config import settings
-from .engine import CARD_MATRIX, UserProfile, match_cards
+from .engine import CARD_MATRIX, UserProfile, match_cards, near_misses
 from .audit import AuditLogger, ConsentStore, ConsentError
 from .feedback import FeedbackStore, FeedbackError
 from .auth import AuthStore, AuthError
+from .emailer import EmailOutbox
 from .storage import init_db
 from .providers import ApplicantRef, get_provider
 from .schemas import (
     ConsentIn, ConsentOut, MatchResult, ProfileIn,
     ReportMatchIn, ReportMatchOut, FeedbackIn, FeedbackOut, CardStat,
-    RegisterIn, LoginIn, UserOut, HistoryItem,
+    RegisterIn, LoginIn, UserOut, HistoryItem, DashboardOut,
 )
+from fastapi.responses import HTMLResponse
 
 SESSION_COOKIE = "cvx_session"
 
@@ -53,6 +55,7 @@ consent_store = ConsentStore(
 audit = AuditLogger(settings.db_path)
 feedback_store = FeedbackStore(settings.db_path)
 auth_store = AuthStore(settings.db_path, session_ttl_days=settings.session_ttl_days)
+email_outbox = EmailOutbox(settings.db_path, provider=settings.email_provider)
 _VALID_CARD_IDS = {c.id for c in CARD_MATRIX}
 
 
@@ -344,6 +347,10 @@ def register(body: RegisterIn, response: Response) -> UserOut:
     user = auth_store.register(body.email, body.password)
     token = auth_store.create_session(user["user_id"])
     _set_session_cookie(response, token)
+    try:
+        email_outbox.enqueue_drip(user["user_id"])  # dormant until a provider is wired
+    except Exception:
+        log.exception("failed to enqueue welcome drip")
     return UserOut(**user)
 
 
@@ -376,3 +383,52 @@ def history(cvx_session: str | None = Cookie(default=None)) -> list[dict]:
     if not user:
         raise HTTPException(status_code=401, detail="Not logged in.")
     return auth_store.history(user["user_id"])
+
+
+# --- Dashboard (logged-in home: history, trends, near-miss nudges) ---------
+@app.get("/v1/dashboard", response_model=DashboardOut)
+def dashboard(cvx_session: str | None = Cookie(default=None)) -> DashboardOut:
+    user = _current_user(cvx_session)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not logged in.")
+    uid = user["user_id"]
+    hist = auth_store.history(uid)
+    latest_profile = auth_store.latest_check(uid)
+    nudges = []
+    if latest_profile:
+        up = UserProfile(
+            score=latest_profile["score"] or 300,
+            utilization=latest_profile["utilization"] or 0.0,
+            inquiries=latest_profile["inquiries"] or 0,
+            new_accounts_24mo=latest_profile.get("new_accounts_24mo"),
+        )
+        nudges = near_misses(up)
+    return DashboardOut(
+        email=user["email"],
+        checks_run=auth_store.count_checks(uid),
+        history=hist,
+        trend=auth_store.trend(uid),
+        near_misses=nudges,
+        latest=hist[0] if hist else None,
+    )
+
+
+# --- One-click email unsubscribe (public; CAN-SPAM) ------------------------
+@app.get("/unsubscribe", response_class=HTMLResponse, include_in_schema=False)
+def unsubscribe(token: str = "") -> HTMLResponse:
+    ok = auth_store.unsubscribe(token)
+    msg = ("You've been unsubscribed from CreditVox emails."
+           if ok else "This unsubscribe link is invalid or already used.")
+    return HTMLResponse(
+        f"<!doctype html><meta charset=utf-8>"
+        f"<body style='font-family:system-ui;background:#0A0E17;color:#fff;"
+        f"display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>"
+        f"<p style='font-size:18px'>{msg}</p></body>"
+    )
+
+
+# --- Email outbox processing (admin; a cron/worker calls this) -------------
+@app.post("/v1/email/process")
+def email_process(x_admin_token: str | None = Header(default=None)) -> dict:
+    _require_admin(x_admin_token)
+    return email_outbox.process_due()

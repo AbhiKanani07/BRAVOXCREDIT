@@ -3,243 +3,248 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CreditVox — see which cards say yes</title>
+<title>Bravox — see which cards say yes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --paper: #f5f7fa;
-    --ink: #0f1e38;
-    --ink-soft: #52627d;
-    --line: #dde3ec;
-    --surface: #ffffff;
-    --accent: #4338ca;
-    --accent-press: #362db0;
-    --radius: 12px;
-    --maxw: 680px;
+    --bg: #0A0E17;
+    --surface: #141A28;
+    --surface-2: #1C2435;
+    --line: #263149;
+    --ink: #FFFFFF;
+    --muted: #9AA7BD;
+    --accent: #2F6BFF;
+    --accent-bright: #4D82FF;
+    --accent-press: #2457D6;
+    --radius: 14px;
+    --maxw: 760px;
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: Inter, system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.55;
-    padding: 0 20px 96px;
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.55;
+    padding: 0 20px 100px;
   }
   .wrap { max-width: var(--maxw); margin: 0 auto; }
+  a { color: var(--accent-bright); }
 
-  header { padding: 28px 0 8px; }
-  .mark {
-    font-family: "Space Grotesk", sans-serif;
-    font-weight: 700; font-size: 18px; letter-spacing: -0.01em;
-  }
-  .mark span { color: var(--accent); }
+  /* Nav */
+  nav { display: flex; align-items: center; justify-content: space-between;
+        padding: 20px 0; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  .mark { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 22px;
+          letter-spacing: -.02em; cursor: pointer; }
+  .mark .x { color: var(--accent); }
+  .navright { display: flex; align-items: center; gap: 8px; }
+  .navlink { appearance: none; border: 0; background: transparent; cursor: pointer;
+             font: inherit; font-size: 14px; color: var(--muted); padding: 8px 12px; border-radius: 9px; }
+  .navlink:hover { color: var(--ink); }
+  .navlink.active { color: var(--ink); background: var(--surface-2); }
+  .navlink.email { color: var(--muted); cursor: default; }
+  .btn { appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600;
+         color: #fff; background: var(--accent); padding: 9px 18px; border-radius: 10px;
+         transition: background .15s ease; }
+  .btn:hover { background: var(--accent-bright); }
+  .btn:active { background: var(--accent-press); }
+  .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent-bright); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
 
-  .hero { padding: 40px 0 28px; }
-  .hero h1 {
-    font-family: "Space Grotesk", sans-serif;
-    font-weight: 700;
-    font-size: clamp(30px, 6vw, 46px);
-    line-height: 1.04;
-    letter-spacing: -0.02em;
-    margin: 0 0 14px;
-    max-width: 14ch;
-  }
-  .hero p { margin: 0; color: var(--ink-soft); font-size: 17px; max-width: 46ch; }
+  /* Hero */
+  .hero { padding: 48px 0 30px; }
+  .hero h1 { font-family: "Space Grotesk", sans-serif; font-weight: 700;
+             font-size: clamp(32px, 6.5vw, 52px); line-height: 1.03; letter-spacing: -.025em;
+             margin: 0 0 16px; max-width: 15ch; }
+  .hero h1 .accent { color: var(--accent); }
+  .hero p { margin: 0; color: var(--muted); font-size: 18px; max-width: 48ch; }
 
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 22px;
-    margin-top: 12px;
-  }
+  /* Panels / cards */
+  .panel { background: var(--surface); border: 1px solid var(--line);
+           border-radius: var(--radius); padding: 24px; margin-top: 14px; }
+  .field-label { font-size: 13px; color: var(--muted); margin: 0 0 7px; }
 
-  .seg {
-    display: inline-flex; border: 1px solid var(--line);
-    border-radius: 10px; overflow: hidden; background: var(--paper);
-  }
-  .seg button {
-    appearance: none; border: 0; background: transparent; cursor: pointer;
-    font: inherit; color: var(--ink-soft); padding: 9px 16px; line-height: 1;
-  }
-  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: inset 0 0 0 1px var(--line); border-radius: 9px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 11px;
+         overflow: hidden; background: var(--bg); }
+  .seg button { appearance: none; border: 0; background: transparent; cursor: pointer;
+                font: inherit; color: var(--muted); padding: 10px 18px; line-height: 1; }
+  .seg button[aria-pressed="true"] { background: var(--surface-2); color: var(--ink);
+                font-weight: 600; box-shadow: inset 0 0 0 1px var(--line); border-radius: 10px; }
 
-  .field-label { font-size: 13px; color: var(--ink-soft); margin: 0 0 6px; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
-  .grid.four { grid-template-columns: repeat(4, 1fr); }
-  input[type="number"] {
-    width: 100%; font: inherit; color: var(--ink);
-    padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px;
-    background: var(--paper);
-  }
-  input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 20px; }
+  input[type=number], input[type=email], input[type=password] {
+    width: 100%; font: inherit; color: var(--ink); padding: 12px 13px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+  input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
 
-  .consent {
-    margin-top: 18px; padding: 14px 16px; border: 1px solid var(--line);
-    border-radius: 10px; background: var(--paper); font-size: 14px; color: var(--ink-soft);
-  }
+  .consent { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--line);
+             border-radius: 11px; background: var(--bg); font-size: 14px; color: var(--muted); }
   .consent label { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; color: var(--ink); cursor: pointer; }
   .consent input { margin-top: 3px; accent-color: var(--accent); width: 16px; height: 16px; }
 
-  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 22px; }
+  .status { margin-top: 18px; font-size: 14px; color: var(--muted); min-height: 1.2em; }
+  .status.error { color: #ff6b6b; }
 
-  .cta {
-    appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600;
-    color: #fff; background: var(--accent); padding: 13px 22px; border-radius: 10px;
-    transition: background .15s ease;
-  }
-  .cta:hover { background: var(--accent-press); }
-  .cta:disabled { opacity: .5; cursor: not-allowed; }
-  .cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  /* Results */
+  .results, .history, .nudges { margin-top: 34px; }
+  .section-head { font-family: "Space Grotesk", sans-serif; font-size: 14px; font-weight: 600;
+                  letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  .pull-note { font-size: 13px; color: var(--muted); margin: -8px 0 16px; }
 
-  .status { margin-top: 18px; font-size: 14px; color: var(--ink-soft); min-height: 1.2em; }
-  .status.error { color: #b42318; }
-
-  .results { margin-top: 30px; }
-  .results h2 { font-family: "Space Grotesk", sans-serif; font-size: 15px; font-weight: 500; color: var(--ink-soft); margin: 0 0 4px; }
-  .pull-note { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; }
-
-  .card {
-    border: 1px solid var(--line); border-left: 3px solid var(--meter);
-    border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; background: var(--surface);
-  }
-  .card.ineligible { border-left-color: var(--line); opacity: .72; }
+  .card { border: 1px solid var(--line); border-left: 3px solid var(--meter);
+          border-radius: 12px; padding: 18px; margin-bottom: 12px; background: var(--surface);
+          transition: transform .12s ease, border-color .12s ease; }
+  .card:hover { transform: translateY(-1px); }
+  .card.ineligible { border-left-color: var(--line); opacity: .66; }
   .card-head { display: flex; align-items: flex-start; gap: 14px; }
-  .thumb { flex: 0 0 auto; width: 68px; height: 43px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,30,56,.18); }
+  .thumb { flex: 0 0 auto; width: 74px; height: 47px; border-radius: 7px; overflow: hidden;
+           box-shadow: 0 2px 8px rgba(0,0,0,.4); }
   .thumb img, .thumb svg { width: 100%; height: 100%; display: block; object-fit: cover; }
-  .card-top { flex: 1 1 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-  .card-name { font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 17px; }
-  .pct { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 24px; color: var(--meter); font-variant-numeric: tabular-nums; }
-  .meter { height: 8px; border-radius: 99px; background: var(--line); margin: 12px 0 10px; overflow: hidden; }
-  .meter > i { display: block; height: 100%; width: 0; background: var(--meter); border-radius: 99px; transition: width .7s cubic-bezier(.2,.7,.2,1); }
-  .card-meta { display: flex; gap: 18px; font-size: 13px; color: var(--ink-soft); }
-  .label-chip { font-size: 12px; font-weight: 600; color: var(--meter); }
-  .reason { font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
+  .card-top { flex: 1 1 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+  .card-name { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 18px; }
+  .pct { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 28px;
+         color: var(--meter); font-variant-numeric: tabular-nums; }
+  .meter { height: 8px; border-radius: 99px; background: var(--surface-2); margin: 14px 0 10px; overflow: hidden; }
+  .meter > i { display: block; height: 100%; width: 0; background: var(--meter); border-radius: 99px;
+               transition: width .7s cubic-bezier(.2,.7,.2,1); }
+  .card-meta { display: flex; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .label-chip { font-size: 12px; font-weight: 700; color: var(--meter); letter-spacing: .02em; }
+  .reason { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 
-  .feat { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .feat { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
   .feat .hl { font-size: 14px; color: var(--ink); margin: 0 0 8px; }
-  .feat dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
-  .feat dt { color: var(--ink-soft); white-space: nowrap; }
+  .feat dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; font-size: 13px; }
+  .feat dt { color: var(--muted); white-space: nowrap; }
   .feat dd { margin: 0; color: var(--ink); }
-  .feat .stamp { margin-top: 8px; font-size: 11px; color: var(--ink-soft); }
+  .feat .stamp { margin-top: 9px; font-size: 11px; color: var(--muted); }
 
-  .fb { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); }
-  .fb button {
-    appearance: none; font: inherit; font-size: 13px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
-    padding: 5px 12px; border-radius: 8px;
-  }
-  .fb button:hover { border-color: var(--accent); color: var(--accent); }
-  .fb button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .fb .done { color: var(--accent); font-weight: 600; }
+  .fb { margin-top: 14px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .fb button { appearance: none; font: inherit; font-size: 13px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+    padding: 6px 13px; border-radius: 8px; }
+  .fb button:hover { border-color: var(--accent); color: var(--accent-bright); }
+  .fb .done { color: var(--accent-bright); font-weight: 600; }
 
-  .foot { margin-top: 40px; font-size: 12px; color: var(--ink-soft); line-height: 1.6; }
+  /* Dashboard */
+  .dash-hello { font-family: "Space Grotesk", sans-serif; font-size: clamp(26px,5vw,38px);
+                font-weight: 700; letter-spacing: -.02em; margin: 40px 0 6px; }
+  .dash-sub { color: var(--muted); margin: 0 0 24px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .stat .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .stat .v { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 30px;
+             margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .stat .v small { font-size: 15px; color: var(--muted); font-weight: 500; }
+  .chart-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+                padding: 20px; margin-top: 14px; }
+  .chart-wrap svg { width: 100%; height: auto; display: block; }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
 
-  @media (prefers-reduced-motion: reduce) { .meter > i { transition: none; } }
-  @media (max-width: 520px) { .grid, .grid.four { grid-template-columns: repeat(2, 1fr); } }
+  .nudge { display: flex; align-items: center; gap: 14px; background: var(--surface);
+           border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .nudge .thumb { width: 60px; height: 38px; }
+  .nudge .n-body { flex: 1 1 auto; }
+  .nudge .n-name { font-weight: 600; }
+  .nudge .n-hint { font-size: 13px; color: var(--accent-bright); margin-top: 2px; }
 
-  header { display: flex; align-items: center; justify-content: space-between; }
-  .auth-bar { display: flex; align-items: center; gap: 12px; font-size: 14px; }
-  .auth-bar .email { color: var(--ink-soft); }
-  .linkbtn { appearance: none; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: 14px; color: var(--accent); padding: 6px 4px; }
-  .linkbtn:hover { text-decoration: underline; }
-  .linkbtn.solid { background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 9px; }
-  .linkbtn.solid:hover { background: var(--accent-press); text-decoration: none; }
+  .hist-row { display: flex; justify-content: space-between; gap: 12px; padding: 13px 15px;
+              border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; font-size: 14px; background: var(--surface); }
+  .hist-row .when { color: var(--muted); font-size: 12px; }
 
-  .modal-bg { position: fixed; inset: 0; background: rgba(15,30,56,.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+  .foot { margin-top: 44px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .empty { color: var(--muted); font-size: 14px; }
+
+  /* Modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.66); display: none;
+              align-items: center; justify-content: center; padding: 20px; z-index: 50; }
   .modal-bg.open { display: flex; }
-  .modal { background: var(--surface); border-radius: 14px; padding: 26px; width: 100%; max-width: 380px; }
-  .modal h3 { font-family: "Space Grotesk", sans-serif; margin: 0 0 4px; font-size: 20px; }
-  .modal p.sub { margin: 0 0 18px; color: var(--ink-soft); font-size: 14px; }
-  .modal label { display: block; font-size: 13px; color: var(--ink-soft); margin: 12px 0 6px; }
-  .modal input { width: 100%; font: inherit; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
-  .modal .row { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; gap: 12px; }
-  .modal .msg { font-size: 13px; color: #b42318; min-height: 1.1em; margin-top: 10px; }
-  .modal .switch { font-size: 13px; color: var(--ink-soft); margin-top: 16px; text-align: center; }
+  .modal { background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+           padding: 28px; width: 100%; max-width: 390px; }
+  .modal h3 { font-family: "Space Grotesk", sans-serif; margin: 0 0 4px; font-size: 22px; }
+  .modal p.sub { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+  .modal label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+  .modal .row { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; gap: 12px; }
+  .modal .msg { font-size: 13px; color: #ff6b6b; min-height: 1.1em; margin-top: 10px; }
+  .modal .switch { font-size: 13px; color: var(--muted); margin-top: 16px; text-align: center; }
 
-  .history { margin-top: 30px; }
-  .history h2 { font-family: "Space Grotesk", sans-serif; font-size: 15px; font-weight: 500; color: var(--ink-soft); margin: 0 0 12px; }
-  .hist-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; font-size: 14px; }
-  .hist-row .when { color: var(--ink-soft); font-size: 12px; }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { .meter > i, .card { transition: none; } }
+  @media (max-width: 560px) { .grid { grid-template-columns: repeat(2, 1fr); } .stats { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="mark">Bravox<span>Credit</span></div>
-    <div class="auth-bar" id="auth-bar">
-      <button class="linkbtn" id="btn-login">Log in</button>
-      <button class="linkbtn solid" id="btn-signup">Sign up</button>
-    </div>
-  </header>
+  <nav>
+    <div class="mark" id="mark">bravo<span class="x">x</span></div>
+    <div class="navright" id="navright"></div>
+  </nav>
 
-  <section class="hero">
-    <h1>See which cards say yes before you apply.</h1>
-    <p>A soft check that estimates your approval odds across popular cards. It never touches your credit score.</p>
-  </section>
+  <!-- ===== CHECK VIEW ===== -->
+  <div id="view-check">
+    <section class="hero">
+      <h1>See which cards say <span class="accent">yes</span> before you apply.</h1>
+      <p>A soft check that estimates your approval odds across popular cards. It never touches your credit score.</p>
+    </section>
 
-  <section class="panel" aria-label="Check your cards">
-    <p class="field-label">How should we get your numbers?</p>
-    <div class="seg" role="group" aria-label="Input mode">
-      <button id="mode-manual" aria-pressed="true">Enter my numbers</button>
-      <button id="mode-pull" aria-pressed="false">Run a demo check</button>
-    </div>
-
-    <div class="grid four" id="manual-fields">
-      <div>
-        <p class="field-label">Credit score</p>
-        <input id="score" type="number" min="300" max="850" value="710" />
+    <section class="panel" aria-label="Check your cards">
+      <p class="field-label">How should we get your numbers?</p>
+      <div class="seg" role="group" aria-label="Input mode">
+        <button id="mode-manual" aria-pressed="true">Enter my numbers</button>
+        <button id="mode-pull" aria-pressed="false">Run a demo check</button>
       </div>
-      <div>
-        <p class="field-label">Utilization %</p>
-        <input id="util" type="number" min="0" max="100" value="15" />
-      </div>
-      <div>
-        <p class="field-label">Hard inquiries</p>
-        <input id="inq" type="number" min="0" max="50" value="1" />
-      </div>
-      <div>
-        <p class="field-label">New accts / 24mo</p>
-        <input id="newacct" type="number" min="0" max="50" placeholder="optional" />
-      </div>
-    </div>
 
-    <div class="consent" id="consent-box" hidden>
-      A demo check simulates a soft inquiry from a credit bureau. No real report is
-      pulled and your score is never affected.
-      <label><input type="checkbox" id="agree" /> I authorize a soft inquiry for prequalification.</label>
-    </div>
-
-    <div class="row-between">
-      <div class="seg" role="group" aria-label="Rank by">
-        <button id="rank-approval" aria-pressed="true">Most likely</button>
-        <button id="rank-fit" aria-pressed="false">Best fit</button>
+      <div class="grid" id="manual-fields">
+        <div><p class="field-label">Credit score</p><input id="score" type="number" min="300" max="850" value="710" /></div>
+        <div><p class="field-label">Utilization %</p><input id="util" type="number" min="0" max="100" value="15" /></div>
+        <div><p class="field-label">Hard inquiries</p><input id="inq" type="number" min="0" max="50" value="1" /></div>
+        <div><p class="field-label">New accts / 24mo</p><input id="newacct" type="number" min="0" max="50" placeholder="optional" /></div>
       </div>
-      <button class="cta" id="check">Check my cards</button>
-    </div>
-    <p class="status" id="status" role="status"></p>
-  </section>
 
-  <section class="results" id="results" hidden>
-    <h2 id="results-head">Your matches</h2>
-    <p class="pull-note" id="pull-note" hidden></p>
-    <div id="cards"></div>
-  </section>
+      <div class="consent hidden" id="consent-box">
+        A demo check simulates a soft inquiry from a credit bureau. No real report is pulled and your score is never affected.
+        <label><input type="checkbox" id="agree" /> I authorize a soft inquiry for prequalification.</label>
+      </div>
 
-  <section class="history" id="history" hidden>
-    <h2>Your recent checks</h2>
-    <div id="hist-rows"></div>
-  </section>
+      <div class="row-between">
+        <div class="seg" role="group" aria-label="Rank by">
+          <button id="rank-approval" aria-pressed="true">Most likely</button>
+          <button id="rank-fit" aria-pressed="false">Best fit</button>
+        </div>
+        <button class="btn" id="check">Check my cards</button>
+      </div>
+      <p class="status" id="status" role="status"></p>
+    </section>
+
+    <section class="results hidden" id="results">
+      <h2 class="section-head" id="results-head">Your matches</h2>
+      <p class="pull-note hidden" id="pull-note"></p>
+      <div id="cards"></div>
+    </section>
+  </div>
+
+  <!-- ===== DASHBOARD VIEW ===== -->
+  <div id="view-dash" class="hidden">
+    <h1 class="dash-hello" id="dash-hello">Welcome back</h1>
+    <p class="dash-sub">Your credit snapshot and the cards within reach.</p>
+    <div class="stats" id="dash-stats"></div>
+    <div id="dash-chart-wrap"></div>
+    <section class="nudges hidden" id="dash-nudges">
+      <h2 class="section-head">Almost there — cards within reach</h2>
+      <div id="nudge-list"></div>
+    </section>
+    <section class="history hidden" id="dash-history">
+      <h2 class="section-head">Recent checks</h2>
+      <div id="hist-rows"></div>
+    </section>
+    <p class="empty hidden" id="dash-empty">Run your first check to start building your dashboard.</p>
+  </div>
 
   <p class="foot">
-    Estimates only, not a guarantee of approval or a credit decision. Approval odds are
-    modeled from public underwriting patterns, not a real credit report. CreditVox is not
-    a lender or a credit reporting agency.
+    Estimates only, not a guarantee of approval or a credit decision. Approval odds are modeled from
+    public underwriting patterns, not a real credit report. Bravox is not a lender or a credit reporting agency.
   </p>
 </div>
 
@@ -253,334 +258,235 @@
     <input id="m-pass" type="password" autocomplete="current-password" />
     <p class="msg" id="modal-msg"></p>
     <div class="row">
-      <button class="linkbtn" id="modal-cancel">Cancel</button>
-      <button class="linkbtn solid" id="modal-submit">Log in</button>
+      <button class="navlink" id="modal-cancel">Cancel</button>
+      <button class="btn" id="modal-submit">Log in</button>
     </div>
     <p class="switch" id="modal-switch"></p>
   </div>
 </div>
 
 <script>
-  // If the frontend is served by the API (same origin), leave this empty.
-  // If you host the UI separately, set it to your API origin, e.g. "https://api.bravoxcredit.com".
   const API_BASE = "";
-
   const $ = (id) => document.getElementById(id);
-  let mode = "manual";      // "manual" | "pull"
-  let rankBy = "approval";  // "approval" | "fit"
-  let lastContext = null;   // profile/report context of the current results, for feedback
-  // Stable per-session token so repeated demo checks are consistent.
+  let mode = "manual", rankBy = "approval", lastContext = null;
+  let currentUser = null, modalMode = "login", view = "check";
   const consumerToken = (crypto.randomUUID && crypto.randomUUID()) || ("sess-" + Date.now() + Math.random());
 
-  function setMode(next) {
-    mode = next;
-    $("mode-manual").setAttribute("aria-pressed", String(next === "manual"));
-    $("mode-pull").setAttribute("aria-pressed", String(next === "pull"));
-    $("manual-fields").hidden = next !== "manual";
-    $("consent-box").hidden = next !== "pull";
-  }
-  function setRank(next) {
-    rankBy = next;
-    $("rank-approval").setAttribute("aria-pressed", String(next === "approval"));
-    $("rank-fit").setAttribute("aria-pressed", String(next === "fit"));
-  }
-  $("mode-manual").onclick = () => setMode("manual");
-  $("mode-pull").onclick = () => setMode("pull");
-  $("rank-approval").onclick = () => setRank("approval");
-  $("rank-fit").onclick = () => setRank("fit");
-
-  function meterColor(pct) {
-    // red (0) -> amber -> green (120). Encodes likelihood.
-    const hue = Math.max(0, Math.min(120, pct * 1.2));
-    return `hsl(${hue} 68% 42%)`;
-  }
-
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  }
-
-  // Card art if we have a licensed image_url; otherwise a generated placeholder
-  // tile colored deterministically from the issuer name.
-  function cardThumb(m) {
-    if (m.image_url) {
-      return `<img src="${esc(m.image_url)}" alt="${esc(m.card_name)}" loading="lazy" />`;
-    }
-    let h = 0;
-    for (const ch of (m.issuer || "")) h = (h * 31 + ch.charCodeAt(0)) % 360;
-    const c1 = `hsl(${h} 42% 32%)`, c2 = `hsl(${(h + 24) % 360} 46% 22%)`;
-    const label = esc((m.issuer || "Card").slice(0, 16));
-    return `<svg viewBox="0 0 68 43" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="g${h}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/>
-      </linearGradient></defs>
-      <rect width="68" height="43" fill="url(#g${h})"/>
-      <rect x="6" y="9" width="11" height="8" rx="1.5" fill="rgba(255,255,255,.55)"/>
-      <text x="6" y="36" fill="rgba(255,255,255,.92)" font-family="Inter,sans-serif" font-size="5.5" font-weight="600">${label}</text>
-    </svg>`;
-  }
-
-  function featuresBlock(m) {
-    const f = m.features || {};
-    if (!f.rewards && !f.highlight && !f.signup_bonus) return "";
-    const rows = [];
-    if (f.rewards) rows.push(`<dt>Rewards</dt><dd>${esc(f.rewards)}</dd>`);
-    if (f.signup_bonus && f.signup_bonus !== "None")
-      rows.push(`<dt>Welcome</dt><dd>${esc(f.signup_bonus)}</dd>`);
-    if (f.intro_apr && !/^(none|see issuer)/i.test(f.intro_apr))
-      rows.push(`<dt>Intro APR</dt><dd>${esc(f.intro_apr)}</dd>`);
-    return `<div class="feat">
-      ${f.highlight ? `<p class="hl">${esc(f.highlight)}</p>` : ""}
-      ${rows.length ? `<dl>${rows.join("")}</dl>` : ""}
-      ${f.last_updated ? `<p class="stamp">Features as of ${esc(f.last_updated)} — verify current terms with the issuer.</p>` : ""}
-    </div>`;
-  }
-
-  function setStatus(msg, isError) {
-    const el = $("status");
-    el.textContent = msg || "";
-    el.classList.toggle("error", !!isError);
-  }
-
-  async function postJSON(path, body) {
-    const res = await fetch(API_BASE + path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || data.error || `Request failed (${res.status})`);
+  function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+  async function postJSON(path, body){
+    const res = await fetch(API_BASE+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.detail||data.error||`Request failed (${res.status})`);
     return data;
   }
+  function meterColor(pct){ const h=Math.max(0,Math.min(120,pct*1.2)); return `hsl(${h} 70% 52%)`; }
+  function setStatus(msg,isErr){ const e=$("status"); e.textContent=msg||""; e.classList.toggle("error",!!isErr); }
 
-  function render(matches, pullMeta) {
-    const host = $("cards");
-    host.innerHTML = "";
-    $("results").hidden = false;
-    $("results-head").textContent = rankBy === "fit" ? "Best fit for your profile" : "Most likely to approve";
+  // ---------- view switching ----------
+  function showView(v){
+    view = v;
+    $("view-check").classList.toggle("hidden", v!=="check");
+    $("view-dash").classList.toggle("hidden", v!=="dash");
+    renderNav();
+    if(v==="dash") loadDashboard();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  $("mark").onclick = () => showView("check");
 
-    const note = $("pull-note");
-    if (pullMeta) {
-      note.hidden = false;
-      note.textContent = `Simulated soft inquiry · ${pullMeta.extras?.model || "model"} · report ${pullMeta.report_id}`;
+  function renderNav(){
+    const r = $("navright");
+    if(currentUser){
+      r.innerHTML = `
+        <button class="navlink ${view==='check'?'active':''}" id="nav-check">Check</button>
+        <button class="navlink ${view==='dash'?'active':''}" id="nav-dash">Dashboard</button>
+        <span class="navlink email">${esc(currentUser.email)}</span>
+        <button class="navlink" id="nav-logout">Log out</button>`;
+      $("nav-check").onclick=()=>showView("check");
+      $("nav-dash").onclick=()=>showView("dash");
+      $("nav-logout").onclick=logout;
     } else {
-      note.hidden = true;
-    }
-
-    if (!matches.length) {
-      host.innerHTML = `<div class="card" style="--meter: var(--line)">
-        <div class="card-name">No matches yet</div>
-        <p class="reason">Nothing cleared the filters. Lowering utilization or inquiries usually opens the most doors.</p>
-      </div>`;
-      return;
-    }
-
-    matches.forEach((m, i) => {
-      const eligible = m.eligible;
-      const pct = eligible ? m.approval_probability : 0;
-      const val = rankBy === "fit" && eligible ? m.fit_score : pct;
-      const color = eligible ? meterColor(pct) : "var(--line)";
-      const el = document.createElement("div");
-      el.className = "card" + (eligible ? "" : " ineligible");
-      el.style.setProperty("--meter", color);
-      el.innerHTML = `
-        <div class="card-head">
-          <div class="thumb">${cardThumb(m)}</div>
-          <div class="card-top">
-            <span class="card-name">${esc(m.card_name)}</span>
-            <span class="pct">${eligible ? val.toFixed(0) + (rankBy === "fit" ? "" : "%") : "—"}</span>
-          </div>
-        </div>
-        <div class="meter"><i data-w="${eligible ? pct : 0}"></i></div>
-        <div class="card-meta">
-          <span class="label-chip">${eligible ? m.match_label : "Not eligible"}</span>
-          <span>${m.annual_fee ? "$" + m.annual_fee + " annual fee" : "No annual fee"}</span>
-          <span>${m.category.replace("_", " ")}</span>
-        </div>
-        ${!eligible && m.reasons?.length ? `<p class="reason">${m.reasons[0]}</p>` : ""}
-        ${eligible ? featuresBlock(m) : ""}
-        ${eligible ? `<div class="fb" data-card="${m.card_id}" data-pct="${pct}">
-          <span>Applied for this?</span>
-          <button data-outcome="approved">Approved</button>
-          <button data-outcome="denied">Denied</button>
-        </div>` : ""}`;
-      host.appendChild(el);
-      // fill meters after paint for the reveal
-      requestAnimationFrame(() => {
-        const bar = el.querySelector(".meter > i");
-        setTimeout(() => { bar.style.width = (eligible ? pct : 0) + "%"; }, 60 + i * 70);
-      });
-    });
-
-    // wire outcome reporters
-    host.querySelectorAll(".fb").forEach((fb) => {
-      fb.querySelectorAll("button").forEach((b) => {
-        b.onclick = () => sendFeedback(fb, b.dataset.outcome);
-      });
-    });
-  }
-
-  async function sendFeedback(fbEl, outcome) {
-    const cardId = fbEl.dataset.card;
-    const body = {
-      consumer_token: consumerToken,
-      card_id: cardId,
-      outcome,
-      approval_probability_shown: Number(fbEl.dataset.pct),
-    };
-    if (lastContext) {
-      if (lastContext.report_id) body.report_id = lastContext.report_id;
-      if (lastContext.score != null) {
-        body.score = lastContext.score;
-        body.utilization = lastContext.utilization;
-        body.inquiries = lastContext.inquiries;
-        if (lastContext.new_accounts_24mo != null) body.new_accounts_24mo = lastContext.new_accounts_24mo;
-      }
-    }
-    try {
-      await postJSON("/v1/feedback", body);
-      fbEl.innerHTML = `<span class="done">Thanks — that helps sharpen the estimates.</span>`;
-    } catch (e) {
-      fbEl.innerHTML = `<span>Couldn't save that. ${e.message}</span>`;
+      r.innerHTML = `<button class="navlink" id="nav-login">Log in</button>
+        <button class="btn" id="nav-signup">Sign up</button>`;
+      $("nav-login").onclick=()=>openModal("login");
+      $("nav-signup").onclick=()=>openModal("signup");
     }
   }
 
-  async function check() {
-    const btn = $("check");
-    btn.disabled = true;
-    setStatus("Checking…", false);
-    try {
-      let matches, pullMeta = null;
-      if (mode === "manual") {
-        const body = {
-          score: Number($("score").value),
-          utilization: Number($("util").value),
-          inquiries: Number($("inq").value),
-        };
-        const na = $("newacct").value;
-        if (na !== "") body.new_accounts_24mo = Number(na);
-        matches = await postJSON(`/v1/match?rank_by=${rankBy}&include_ineligible=true`, body);
-        lastContext = { ...body, report_id: null };
+  // ---------- mode / rank ----------
+  function setMode(n){ mode=n; $("mode-manual").setAttribute("aria-pressed",n==="manual");
+    $("mode-pull").setAttribute("aria-pressed",n==="pull");
+    $("manual-fields").classList.toggle("hidden",n!=="manual");
+    $("consent-box").classList.toggle("hidden",n!=="pull"); }
+  function setRank(n){ rankBy=n; $("rank-approval").setAttribute("aria-pressed",n==="approval");
+    $("rank-fit").setAttribute("aria-pressed",n==="fit"); }
+  $("mode-manual").onclick=()=>setMode("manual"); $("mode-pull").onclick=()=>setMode("pull");
+  $("rank-approval").onclick=()=>setRank("approval"); $("rank-fit").onclick=()=>setRank("fit");
+
+  // ---------- card rendering ----------
+  function cardThumb(m){
+    if(m.image_url) return `<img src="${esc(m.image_url)}" alt="${esc(m.card_name)}" loading="lazy"/>`;
+    let h=0; for(const ch of (m.issuer||"")) h=(h*31+ch.charCodeAt(0))%360;
+    const c1=`hsl(${h} 45% 40%)`, c2=`hsl(${(h+24)%360} 48% 26%)`;
+    return `<svg viewBox="0 0 74 47" xmlns="http://www.w3.org/2000/svg"><defs>
+      <linearGradient id="g${h}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+      <rect width="74" height="47" fill="url(#g${h})"/>
+      <rect x="7" y="10" width="12" height="9" rx="1.5" fill="rgba(255,255,255,.5)"/>
+      <text x="7" y="40" fill="rgba(255,255,255,.92)" font-family="Inter,sans-serif" font-size="6" font-weight="600">${esc((m.issuer||"Card").slice(0,16))}</text></svg>`;
+  }
+  function featuresBlock(m){
+    const f=m.features||{}; if(!f.rewards&&!f.highlight&&!f.signup_bonus) return "";
+    const rows=[];
+    if(f.rewards) rows.push(`<dt>Rewards</dt><dd>${esc(f.rewards)}</dd>`);
+    if(f.signup_bonus&&f.signup_bonus!=="None") rows.push(`<dt>Welcome</dt><dd>${esc(f.signup_bonus)}</dd>`);
+    if(f.intro_apr&&!/^(none|see issuer)/i.test(f.intro_apr)) rows.push(`<dt>Intro APR</dt><dd>${esc(f.intro_apr)}</dd>`);
+    return `<div class="feat">${f.highlight?`<p class="hl">${esc(f.highlight)}</p>`:""}
+      ${rows.length?`<dl>${rows.join("")}</dl>`:""}
+      ${f.last_updated?`<p class="stamp">Features as of ${esc(f.last_updated)} — verify current terms with the issuer.</p>`:""}</div>`;
+  }
+  function render(matches, pullMeta){
+    const host=$("cards"); host.innerHTML=""; $("results").classList.remove("hidden");
+    $("results-head").textContent = rankBy==="fit" ? "Best fit for your profile" : "Most likely to approve";
+    const note=$("pull-note");
+    if(pullMeta){ note.classList.remove("hidden"); note.textContent=`Simulated soft inquiry · ${pullMeta.extras?.model||"model"} · report ${pullMeta.report_id}`; }
+    else note.classList.add("hidden");
+    if(!matches.length){ host.innerHTML=`<div class="card" style="--meter:var(--line)"><div class="card-name">No matches yet</div><p class="reason">Nothing cleared the filters. Lowering utilization or inquiries usually opens the most doors.</p></div>`; return; }
+    matches.forEach((m,i)=>{
+      const el=m.eligible, pct=el?m.approval_probability:0, val=rankBy==="fit"&&el?m.fit_score:pct;
+      const color=el?meterColor(pct):"var(--line)";
+      const d=document.createElement("div"); d.className="card"+(el?"":" ineligible"); d.style.setProperty("--meter",color);
+      d.innerHTML=`<div class="card-head"><div class="thumb">${cardThumb(m)}</div>
+        <div class="card-top"><span class="card-name">${esc(m.card_name)}</span>
+        <span class="pct">${el?val.toFixed(0)+(rankBy==="fit"?"":"%"):"—"}</span></div></div>
+        <div class="meter"><i data-w="${el?pct:0}"></i></div>
+        <div class="card-meta"><span class="label-chip">${el?m.match_label:"Not eligible"}</span>
+          <span>${m.annual_fee?"$"+m.annual_fee+" annual fee":"No annual fee"}</span>
+          <span>${m.category.replace("_"," ")}</span></div>
+        ${!el&&m.reasons?.length?`<p class="reason">${esc(m.reasons[0])}</p>`:""}
+        ${el?featuresBlock(m):""}
+        ${el?`<div class="fb" data-card="${m.card_id}" data-pct="${pct}"><span>Applied for this?</span>
+          <button data-outcome="approved">Approved</button><button data-outcome="denied">Denied</button></div>`:""}`;
+      host.appendChild(d);
+      requestAnimationFrame(()=>{ const bar=d.querySelector(".meter>i"); setTimeout(()=>{bar.style.width=(el?pct:0)+"%";},60+i*60); });
+    });
+    host.querySelectorAll(".fb").forEach(fb=>fb.querySelectorAll("button").forEach(b=>b.onclick=()=>sendFeedback(fb,b.dataset.outcome)));
+  }
+  async function sendFeedback(fbEl, outcome){
+    const body={consumer_token:consumerToken,card_id:fbEl.dataset.card,outcome,approval_probability_shown:Number(fbEl.dataset.pct)};
+    if(lastContext){ if(lastContext.report_id)body.report_id=lastContext.report_id;
+      if(lastContext.score!=null){body.score=lastContext.score;body.utilization=lastContext.utilization;body.inquiries=lastContext.inquiries;
+        if(lastContext.new_accounts_24mo!=null)body.new_accounts_24mo=lastContext.new_accounts_24mo;} }
+    try{ await postJSON("/v1/feedback",body); fbEl.innerHTML=`<span class="done">Thanks — that helps sharpen the estimates.</span>`; }
+    catch(e){ fbEl.innerHTML=`<span>Couldn't save that. ${esc(e.message)}</span>`; }
+  }
+  async function check(){
+    const btn=$("check"); btn.disabled=true; setStatus("Checking…",false);
+    try{
+      let matches, pullMeta=null;
+      if(mode==="manual"){
+        const body={score:Number($("score").value),utilization:Number($("util").value),inquiries:Number($("inq").value)};
+        const na=$("newacct").value; if(na!=="")body.new_accounts_24mo=Number(na);
+        matches=await postJSON(`/v1/match?rank_by=${rankBy}&include_ineligible=true`,body);
+        lastContext={...body,report_id:null};
       } else {
-        if (!$("agree").checked) { setStatus("Please authorize the soft inquiry to continue.", true); btn.disabled = false; return; }
-        const consent = await postJSON("/v1/consent", { consumer_token: consumerToken, agreed: true });
-        const out = await postJSON("/v1/match-from-report", {
-          consent_id: consent.consent_id,
-          consumer_token: consumerToken,
-          rank_by: rankBy,
-          include_ineligible: true,
-        });
-        matches = out.matches; pullMeta = out.report;
-        lastContext = { report_id: out.report.report_id };
+        if(!$("agree").checked){ setStatus("Please authorize the soft inquiry to continue.",true); btn.disabled=false; return; }
+        const consent=await postJSON("/v1/consent",{consumer_token:consumerToken,agreed:true});
+        const out=await postJSON("/v1/match-from-report",{consent_id:consent.consent_id,consumer_token:consumerToken,rank_by:rankBy,include_ineligible:true});
+        matches=out.matches; pullMeta=out.report; lastContext={report_id:out.report.report_id};
       }
-      setStatus("", false);
-      render(matches, pullMeta);
-      $("results").scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (e) {
-      setStatus(e.message, true);
-    } finally {
-      btn.disabled = false;
-    }
+      setStatus("",false); render(matches,pullMeta); $("results").scrollIntoView({behavior:"smooth",block:"start"});
+    }catch(e){ setStatus(e.message,true); }
+    finally{ btn.disabled=false; }
   }
-  $("check").onclick = check;
-  // after a successful check, refresh history if logged in
-  const _origRender = render;
-  render = function (m, meta) { _origRender(m, meta); if (currentUser) loadHistory(); };
+  $("check").onclick=check;
 
-  // ---- Auth ----
-  let currentUser = null;
-  let modalMode = "login"; // "login" | "signup"
-
-  function renderAuthBar() {
-    const bar = $("auth-bar");
-    if (currentUser) {
-      bar.innerHTML = `<span class="email">${esc(currentUser.email)}</span>
-        <button class="linkbtn" id="btn-logout">Log out</button>`;
-      $("btn-logout").onclick = logout;
-      loadHistory();
-    } else {
-      bar.innerHTML = `<button class="linkbtn" id="btn-login">Log in</button>
-        <button class="linkbtn solid" id="btn-signup">Sign up</button>`;
-      $("btn-login").onclick = () => openModal("login");
-      $("btn-signup").onclick = () => openModal("signup");
-      $("history").hidden = true;
-    }
+  // ---------- auth ----------
+  function openModal(m){
+    modalMode=m;
+    $("modal-title").textContent = m==="signup"?"Create your account":"Log in";
+    $("modal-sub").textContent = m==="signup"?"Save your checks and unlock your dashboard.":"Welcome back.";
+    $("modal-submit").textContent = m==="signup"?"Sign up":"Log in";
+    $("modal-switch").innerHTML = m==="signup"
+      ? `Already have an account? <button class="navlink" id="m-switch">Log in</button>`
+      : `New here? <button class="navlink" id="m-switch">Create an account</button>`;
+    $("m-switch").onclick=()=>openModal(m==="signup"?"login":"signup");
+    $("modal-msg").textContent=""; $("modal-bg").classList.add("open"); $("m-email").focus();
   }
-
-  function openModal(m) {
-    modalMode = m;
-    $("modal-title").textContent = m === "signup" ? "Create your account" : "Log in";
-    $("modal-sub").textContent = m === "signup"
-      ? "Save your checks and track them over time." : "Welcome back.";
-    $("modal-submit").textContent = m === "signup" ? "Sign up" : "Log in";
-    $("modal-switch").innerHTML = m === "signup"
-      ? `Already have an account? <button class="linkbtn" id="m-switch">Log in</button>`
-      : `New here? <button class="linkbtn" id="m-switch">Create an account</button>`;
-    $("m-switch").onclick = () => openModal(m === "signup" ? "login" : "signup");
-    $("modal-msg").textContent = "";
-    $("modal-bg").classList.add("open");
-    $("m-email").focus();
+  function closeModal(){ $("modal-bg").classList.remove("open"); }
+  async function submitAuth(){
+    const email=$("m-email").value.trim(), password=$("m-pass").value;
+    const path=modalMode==="signup"?"/v1/auth/register":"/v1/auth/login";
+    $("modal-submit").disabled=true;
+    try{ currentUser=await postJSON(path,{email,password}); closeModal(); $("m-pass").value="";
+      renderNav(); showView("dash"); }
+    catch(e){ $("modal-msg").textContent=e.message; }
+    finally{ $("modal-submit").disabled=false; }
   }
-  function closeModal() { $("modal-bg").classList.remove("open"); }
+  async function logout(){ try{await postJSON("/v1/auth/logout",{});}catch(e){} currentUser=null; renderNav(); showView("check"); }
+  $("modal-submit").onclick=submitAuth; $("modal-cancel").onclick=closeModal;
+  $("modal-bg").onclick=(e)=>{ if(e.target===$("modal-bg"))closeModal(); };
+  $("m-pass").addEventListener("keydown",(e)=>{ if(e.key==="Enter")submitAuth(); });
 
-  async function submitAuth() {
-    const email = $("m-email").value.trim();
-    const password = $("m-pass").value;
-    const path = modalMode === "signup" ? "/v1/auth/register" : "/v1/auth/login";
-    $("modal-submit").disabled = true;
-    try {
-      currentUser = await postJSON(path, { email, password });
-      closeModal();
-      $("m-pass").value = "";
-      renderAuthBar();
-    } catch (e) {
-      $("modal-msg").textContent = e.message;
-    } finally {
-      $("modal-submit").disabled = false;
-    }
+  // ---------- dashboard ----------
+  async function loadDashboard(){
+    try{
+      const res=await fetch(API_BASE+"/v1/dashboard"); if(!res.ok) return;
+      renderDashboard(await res.json());
+    }catch(e){}
   }
+  function renderDashboard(d){
+    $("dash-hello").textContent = "Welcome back";
+    const latest=d.latest;
+    const empty = d.checks_run===0;
+    $("dash-empty").classList.toggle("hidden",!empty);
+    $("dash-stats").classList.toggle("hidden",empty);
+    $("dash-chart-wrap").classList.toggle("hidden",empty||d.trend.length<2);
+    $("dash-nudges").classList.toggle("hidden",empty||!d.near_misses.length);
+    $("dash-history").classList.toggle("hidden",empty);
+    if(empty) return;
 
-  async function logout() {
-    try { await postJSON("/v1/auth/logout", {}); } catch (e) {}
-    currentUser = null;
-    renderAuthBar();
+    $("dash-stats").innerHTML = `
+      <div class="stat"><div class="k">Checks run</div><div class="v">${d.checks_run}</div></div>
+      <div class="stat"><div class="k">Latest score</div><div class="v">${latest&&latest.score!=null?latest.score:"—"}</div></div>
+      <div class="stat"><div class="k">Latest utilization</div><div class="v">${latest&&latest.utilization!=null?latest.utilization.toFixed(0)+"<small>%</small>":"—"}</div></div>`;
+
+    // trend chart
+    $("dash-chart-wrap").innerHTML = d.trend.length>=2
+      ? `<div class="chart-wrap">${trendChart(d.trend)}
+         <div class="legend"><span><i style="background:var(--accent)"></i>Score</span>
+         <span><i style="background:#f0a93b"></i>Utilization %</span></div></div>` : "";
+
+    // near-miss nudges
+    $("nudge-list").innerHTML = d.near_misses.map(c=>`
+      <div class="nudge"><div class="thumb">${cardThumb(c)}</div>
+        <div class="n-body"><div class="n-name">${esc(c.card_name)}</div>
+        <div class="n-hint">${esc(c.hints[0])}</div></div></div>`).join("");
+
+    // history
+    $("hist-rows").innerHTML = d.history.map(r=>{
+      const when=new Date(r.created_at).toLocaleString();
+      const top=r.top_card_name?`${esc(r.top_card_name)} · ${r.top_probability?r.top_probability.toFixed(0)+"%":""}`:"no eligible cards";
+      return `<div class="hist-row"><div>Score ${r.score??"—"} · ${r.utilization!=null?r.utilization.toFixed(0):"—"}% util · ${r.inquiries??"—"} inq
+        <div class="when">${when} · ${r.result_count??0} matches</div></div>
+        <div style="text-align:right">${top}</div></div>`;
+    }).join("");
   }
-
-  async function loadHistory() {
-    try {
-      const res = await fetch(API_BASE + "/v1/history");
-      if (!res.ok) return;
-      const rows = await res.json();
-      const host = $("hist-rows");
-      if (!rows.length) { $("history").hidden = true; return; }
-      host.innerHTML = rows.map(r => {
-        const when = new Date(r.created_at).toLocaleString();
-        const top = r.top_card_name
-          ? `${esc(r.top_card_name)} · ${r.top_probability ? r.top_probability.toFixed(0) + "%" : ""}`
-          : "no eligible cards";
-        return `<div class="hist-row">
-          <div>Score ${r.score ?? "—"} · ${r.utilization ?? "—"}% util · ${r.inquiries ?? "—"} inq
-            <div class="when">${when} · ${r.result_count ?? 0} matches</div></div>
-          <div style="text-align:right">${top}</div>
-        </div>`;
-      }).join("");
-      $("history").hidden = false;
-    } catch (e) {}
+  function trendChart(points){
+    const W=680,H=180,P=28;
+    const xs=(i)=>P+(W-2*P)*(points.length===1?0.5:i/(points.length-1));
+    const sY=(v)=>{ const lo=300,hi=850; return H-P-(H-2*P)*((Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)); };
+    const uY=(v)=>{ return H-P-(H-2*P)*(Math.max(0,Math.min(100,v))/100); };
+    const line=(acc,i)=>`${i?"L":"M"}${xs(i).toFixed(1)},${acc.toFixed(1)}`;
+    const scoreP=points.map((p,i)=>line(sY(p.score??300),i)).join(" ");
+    const utilP=points.map((p,i)=>line(uY(p.utilization??0),i)).join(" ");
+    const dots=points.map((p,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${sY(p.score??300).toFixed(1)}" r="3" fill="var(--accent)"/>`).join("");
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <path d="${utilP}" fill="none" stroke="#f0a93b" stroke-width="2" stroke-opacity=".8" stroke-dasharray="4 3"/>
+      <path d="${scoreP}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>${dots}</svg>`;
   }
 
-  $("modal-submit").onclick = submitAuth;
-  $("modal-cancel").onclick = closeModal;
-  $("modal-bg").onclick = (e) => { if (e.target === $("modal-bg")) closeModal(); };
-  $("m-pass").addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
-  $("btn-login").onclick = () => openModal("login");
-  $("btn-signup").onclick = () => openModal("signup");
-
-  // on load, check if already logged in
-  (async () => {
-    try {
-      const res = await fetch(API_BASE + "/v1/auth/me");
-      if (res.ok) { currentUser = await res.json(); renderAuthBar(); }
-    } catch (e) {}
-  })();
+  // ---------- boot ----------
+  renderNav();
+  (async()=>{ try{ const r=await fetch(API_BASE+"/v1/auth/me"); if(r.ok){ currentUser=await r.json(); renderNav(); } }catch(e){} })();
 </script>
 </body>
 </html>

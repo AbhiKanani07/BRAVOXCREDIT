@@ -126,3 +126,29 @@ class HistoryItem(BaseModel):
     top_card_name: Optional[str] = None
     top_probability: Optional[float] = None
     result_count: Optional[int] = None
+
+
+class TrendPoint(BaseModel):
+    date: str
+    score: Optional[int] = None
+    utilization: Optional[float] = None
+
+
+class NearMiss(BaseModel):
+    card_id: str
+    card_name: str
+    issuer: str
+    category: str
+    annual_fee: int
+    image_url: str = ""
+    features: dict = Field(default_factory=dict)
+    hints: list[str]
+
+
+class DashboardOut(BaseModel):
+    email: str
+    checks_run: int
+    history: list[HistoryItem]
+    trend: list[TrendPoint]
+    near_misses: list[NearMiss]
+    latest: Optional[HistoryItem] = None

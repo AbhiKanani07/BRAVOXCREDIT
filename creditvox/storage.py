@@ -148,12 +148,30 @@ CREATE TABLE IF NOT EXISTS saved_checks (
     result_count      INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS email_outbox (
+    outbox_id     TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL,
+    template      TEXT NOT NULL,
+    subject       TEXT NOT NULL,
+    scheduled_for TEXT NOT NULL,
+    status        TEXT NOT NULL DEFAULT 'queued',
+    created_at    TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
 CREATE INDEX IF NOT EXISTS idx_consent_token ON consents(consumer_token_hash);
 CREATE INDEX IF NOT EXISTS idx_feedback_card ON feedback(card_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_checks_user ON saved_checks(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_outbox_status ON email_outbox(status, scheduled_for);
 """
+
+# Idempotent column additions for databases created before these columns existed.
+# Each runs in its own transaction; "already exists" errors are expected and ignored.
+_MIGRATIONS = [
+    "ALTER TABLE users ADD COLUMN email_opt_in INTEGER DEFAULT 1",
+    "ALTER TABLE users ADD COLUMN unsubscribe_token TEXT",
+]
 
 
 def init_db(db_path: Optional[str] = None) -> None:
@@ -161,3 +179,10 @@ def init_db(db_path: Optional[str] = None) -> None:
         Path(db_path or settings.db_path).parent.mkdir(parents=True, exist_ok=True)
     with get_conn(db_path) as conn:
         conn.executescript(_SCHEMA)
+    # Apply idempotent migrations (each isolated so one failure doesn't abort others).
+    for stmt in _MIGRATIONS:
+        try:
+            with get_conn(db_path) as conn:
+                conn.execute(stmt)
+        except Exception:
+            pass  # column already exists — expected on an up-to-date database

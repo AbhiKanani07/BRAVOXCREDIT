@@ -82,10 +82,11 @@ class AuthStore:
             if existing:
                 raise AuthError("An account with that email already exists.")
             user_id = str(uuid.uuid4())
+            unsub = secrets.token_urlsafe(24)
             conn.execute(
-                "INSERT INTO users (user_id, email, password_hash, created_at) "
-                "VALUES (?,?,?,?)",
-                (user_id, email, hash_password(password), _now().isoformat()),
+                "INSERT INTO users (user_id, email, password_hash, created_at, "
+                "email_opt_in, unsubscribe_token) VALUES (?,?,?,?,1,?)",
+                (user_id, email, hash_password(password), _now().isoformat(), unsub),
             )
         return {"user_id": user_id, "email": email}
 
@@ -160,6 +161,22 @@ class AuthStore:
                  len(eligible)),
             )
 
+    # --- email opt-out -----------------------------------------------------
+    def unsubscribe(self, token: str) -> bool:
+        """One-click unsubscribe via the token embedded in emails. Returns True
+        if a matching user was found and opted out."""
+        if not token:
+            return False
+        with get_conn(self._db) as conn:
+            row = conn.execute(
+                "SELECT user_id FROM users WHERE unsubscribe_token = ?", (token,)
+            ).fetchone()
+            if row is None:
+                return False
+            conn.execute("UPDATE users SET email_opt_in = 0 WHERE user_id = ?",
+                         (row["user_id"],))
+        return True
+
     def history(self, user_id: str, limit: int = 50) -> list[dict]:
         with get_conn(self._db) as conn:
             rows = conn.execute(
@@ -170,3 +187,33 @@ class AuthStore:
                 (user_id, limit),
             ).fetchall()
         return [dict(r) for r in rows]
+
+    def latest_check(self, user_id: str) -> Optional[dict]:
+        """Most recent check's full profile (incl. new_accounts) for nudges."""
+        with get_conn(self._db) as conn:
+            row = conn.execute(
+                "SELECT score, utilization, inquiries, new_accounts_24mo "
+                "FROM saved_checks WHERE user_id = ? "
+                "ORDER BY created_at DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def trend(self, user_id: str, limit: int = 30) -> list[dict]:
+        """Chronological score/utilization points for the dashboard chart."""
+        with get_conn(self._db) as conn:
+            rows = conn.execute(
+                "SELECT created_at, score, utilization FROM saved_checks "
+                "WHERE user_id = ? ORDER BY created_at ASC LIMIT ?",
+                (user_id, limit),
+            ).fetchall()
+        return [{"date": r["created_at"], "score": r["score"],
+                 "utilization": r["utilization"]} for r in rows]
+
+    def count_checks(self, user_id: str) -> int:
+        with get_conn(self._db) as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) AS n FROM saved_checks WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+        return int(row["n"])

@@ -66,6 +66,12 @@ class Settings:
         # How long a login session cookie stays valid.
         self.session_ttl_days: int = int(os.getenv("SESSION_TTL_DAYS", "30"))
 
+        # Engagement email. Dormant until a real provider is wired:
+        #   noop (default) -> logs only, sends nothing
+        #   provider       -> your real ESP (implement in emailer.py)
+        self.email_provider: str = os.getenv("EMAIL_PROVIDER", "noop").lower()
+        self.from_email: str = os.getenv("FROM_EMAIL", "hello@bravoxcredit.com")
+
     @property
     def is_prod(self) -> bool:
         return self.app_env == "prod"
