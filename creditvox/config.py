@@ -57,6 +57,7 @@ class Settings:
         self.disclosure_version: str = os.getenv("DISCLOSURE_VERSION", "2026-01-v1")
 
         self.log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
+        self.admin_token: str = os.getenv("ADMIN_TOKEN", "").strip()
 
     @property
     def is_prod(self) -> bool:
