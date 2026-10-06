@@ -149,6 +149,20 @@
   .cookie.show{display:flex;align-items:center;gap:14px;flex-wrap:wrap;} .cookie p{margin:0;font-size:13px;color:var(--muted);flex:1;min-width:240px;} .cookie a{color:var(--accent-bright);cursor:pointer;}
   .cookie .acts{display:flex;gap:8px;} .cookie button{font:inherit;font-size:13px;padding:8px 15px;border-radius:9px;cursor:pointer;border:0;} .cookie .acc{background:var(--accent);color:#fff;} .cookie .dec{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line-2);}
   .affdisc{font-size:12px;color:var(--faint);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 20px;}
+
+  .bureau-toggle{background:none;border:0;color:var(--accent-bright);font:inherit;font-size:13.5px;cursor:pointer;padding:16px 0 0;}
+  .bureau-toggle:hover{text-decoration:underline;}
+  .bureau-panel{margin-top:14px;padding:18px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.2);}
+  .bureau-note{font-size:12px;color:var(--faint);margin:14px 0 0;line-height:1.55;}
+  .pull-line{font-size:12.5px;color:var(--muted);margin-top:12px;} .pull-line b{color:var(--ink);font-weight:600;}
+
+  .acctwrap{position:relative;}
+  .acctbtn{display:flex;align-items:center;gap:9px;background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;font-weight:500;cursor:pointer;padding:6px 10px;border-radius:10px;}
+  .acctbtn:hover{background:var(--surface-2);} .acctbtn .adot{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#17336f);flex:0 0 auto;} .acctbtn .cv{color:var(--faint);font-size:11px;}
+  .acctmenu{position:absolute;right:0;top:calc(100% + 10px);width:224px;background:#0E1420;border:1px solid var(--line-2);border-radius:14px;padding:8px;z-index:40;box-shadow:0 22px 54px rgba(0,0,0,.6);display:none;}
+  .acctmenu.open{display:block;} .acctmenu .am-email{padding:9px 12px 10px;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--line);margin-bottom:6px;}
+  .acctmenu button{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;padding:10px 12px;border-radius:9px;cursor:pointer;} .acctmenu button:hover{background:var(--surface-2);}
+  .acctmenu .am-sep{height:1px;background:var(--line);margin:6px 4px;}
 </style>
 </head>
 <body>
@@ -175,6 +189,16 @@
           <div><p class="flabel">Utilization %</p><input id="util" type="number" min="0" max="100" value="15"/></div>
           <div><p class="flabel">Hard inquiries</p><input id="inq" type="number" min="0" max="50" value="1"/></div>
           <div><p class="flabel">New accts / 24mo</p><input id="newacct" type="number" min="0" max="50" placeholder="optional"/></div>
+        </div>
+        <button class="bureau-toggle" id="bureau-toggle">+ Enter scores by bureau (optional)</button>
+        <div class="bureau-panel" id="bureau-panel" style="display:none">
+          <div class="grid4">
+            <div><p class="flabel">Experian</p><input id="b-ex" type="number" min="300" max="850" placeholder="optional"/></div>
+            <div><p class="flabel">Equifax</p><input id="b-eq" type="number" min="300" max="850" placeholder="optional"/></div>
+            <div><p class="flabel">TransUnion</p><input id="b-tu" type="number" min="300" max="850" placeholder="optional"/></div>
+            <div><p class="flabel">Score model</p><div class="seg"><button id="mdl-fico" aria-pressed="true">FICO</button><button id="mdl-vs" aria-pressed="false">VantageScore</button></div></div>
+          </div>
+          <p class="bureau-note">Each card is judged against the bureau its issuer typically pulls (e.g. Amex &amp; Chase lean Experian; Capital One pulls all three). Leave blank to use your main score everywhere. Bureau pulls vary by state and applicant — these are typical, not guaranteed.</p>
         </div>
         <div class="consent" id="consent-box" style="display:none">A demo check simulates a soft inquiry. No real report is pulled and your score is never affected.
           <label><input type="checkbox" id="agree"/> I authorize a soft inquiry for prequalification.</label></div>
@@ -233,7 +257,7 @@
 <script>
   const API_BASE="";
   const $=(id)=>document.getElementById(id);
-  const st={mode:"manual",rankBy:"approval",ctx:null,matches:[],profile:null,user:null,view:"check",cards:null,dash:null,range:"ALL",modalMode:"login"};
+  const st={mode:"manual",rankBy:"approval",model:"FICO",ctx:null,matches:[],profile:null,user:null,view:"check",cards:null,dash:null,range:"ALL",modalMode:"login"};
   const tok=(crypto.randomUUID&&crypto.randomUUID())||("s"+Date.now()+Math.random());
   function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
   async function postJSON(p,b){const r=await fetch(API_BASE+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
@@ -279,22 +303,34 @@
     $("nav").innerHTML=items.map(([k,l])=>`<button data-v="${k}" class="${st.view===k?'on':''}">${l}</button>`).join("");
     $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
     const f=$("authbar");
-    if(st.user) f.innerHTML=`<span class="em">${esc(st.user.email)}</span><button class="lk" id="lo">Log out</button>`,$("lo").onclick=logout;
-    else f.innerHTML=`<button class="lk" id="li">Log in</button><button class="btn" id="su">Sign up</button>`,$("li").onclick=()=>openModal("login"),$("su").onclick=()=>openModal("signup");
+    if(st.user){
+      f.innerHTML=`<div class="acctwrap"><button class="acctbtn" id="acctbtn"><span class="adot"></span>Account <span class="cv">▾</span></button>
+        <div class="acctmenu" id="acctmenu"><div class="am-email">${esc(st.user.email)}</div>
+          <button data-go="dash">Dashboard</button><button data-go="matches">My matches</button><button data-go="explore">Explore cards</button>
+          <div class="am-sep"></div><button id="am-logout">Log out</button></div></div>`;
+      $("acctbtn").onclick=(e)=>{e.stopPropagation();$("acctmenu").classList.toggle("open");};
+      $("acctmenu").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{closeAcct();showView(b.dataset.go);});
+      $("am-logout").onclick=()=>{closeAcct();logout();};
+    } else { f.innerHTML=`<button class="lk" id="li">Log in</button><button class="btn" id="su">Sign up</button>`;$("li").onclick=()=>openModal("login");$("su").onclick=()=>openModal("signup"); }
   }
+  function closeAcct(){const m=$("acctmenu");if(m)m.classList.remove("open");}
+  document.addEventListener("click",closeAcct);
   function showView(v){ st.view=v; ["check","matches","explore","dash","legal"].forEach(k=>{const el=$("v-"+k);el.classList.toggle("show",k===v);});
     renderNav(); if(v==="matches")renderMatches(); if(v==="explore")loadExplore(); if(v==="dash")loadDashboard();
     window.scrollTo({top:0,behavior:"smooth"}); }
 
   // ---- check ----
   function setMode(n){st.mode=n;$("mode-manual").setAttribute("aria-pressed",n==="manual");$("mode-pull").setAttribute("aria-pressed",n==="pull");
-    $("manual-fields").style.display=n==="manual"?"grid":"none";$("consent-box").style.display=n==="pull"?"block":"none";}
+    $("manual-fields").style.display=n==="manual"?"grid":"none";$("consent-box").style.display=n==="pull"?"block":"none";$("bureau-toggle").style.display=n==="manual"?"block":"none";if(n!=="manual")$("bureau-panel").style.display="none";}
   function setRank(n){st.rankBy=n;$("rank-approval").setAttribute("aria-pressed",n==="approval");$("rank-fit").setAttribute("aria-pressed",n==="fit");}
   $("mode-manual").onclick=()=>setMode("manual");$("mode-pull").onclick=()=>setMode("pull");
   $("rank-approval").onclick=()=>setRank("approval");$("rank-fit").onclick=()=>setRank("fit");
+  $("bureau-toggle").onclick=()=>{const pnl=$("bureau-panel");const open=pnl.style.display!=="none";pnl.style.display=open?"none":"block";$("bureau-toggle").textContent=(open?"+ ":"– ")+"Enter scores by bureau (optional)";};
+  function setModel(m){st.model=m;$("mdl-fico").setAttribute("aria-pressed",m==="FICO");$("mdl-vs").setAttribute("aria-pressed",m==="VantageScore");}
+  $("mdl-fico").onclick=()=>setModel("FICO");$("mdl-vs").onclick=()=>setModel("VantageScore");
   async function check(){const btn=$("check");btn.disabled=true;setStatus("Checking…",false);
     try{ if(st.mode==="manual"){const body={score:+$("score").value,utilization:+$("util").value,inquiries:+$("inq").value};
-        const na=$("newacct").value;if(na!=="")body.new_accounts_24mo=+na;
+        const na=$("newacct").value;if(na!=="")body.new_accounts_24mo=+na;const ex=$("b-ex").value,eq=$("b-eq").value,tu=$("b-tu").value;if(ex!=="")body.experian=+ex;if(eq!=="")body.equifax=+eq;if(tu!=="")body.transunion=+tu;body.model=st.model;
         st.matches=await postJSON(`/v1/match?rank_by=${st.rankBy}&include_ineligible=true`,body);st.ctx={...body,report_id:null};st.profile={...body};
       } else { if(!$("agree").checked){setStatus("Please authorize the soft inquiry to continue.",true);btn.disabled=false;return;}
         const c=await postJSON("/v1/consent",{consumer_token:tok,agreed:true});
@@ -308,6 +344,11 @@
   function specLine(m){const f=m.features||{};const bits=[m.annual_fee?("$"+m.annual_fee+" fee"):"No annual fee"];
     if(f.signup_bonus&&f.signup_bonus!=="None"&&!/see issuer/i.test(f.signup_bonus))bits.push(f.signup_bonus);
     bits.push(m.category.replace("_"," "));return bits.join(" · ");}
+  function pullLine(r){const nm={experian:"Experian",equifax:"Equifax",transunion:"TransUnion"};
+    if(r.pull_bureau==="none")return "No credit check to apply";
+    if(r.pull_bureau==="all")return `Typically pulls <b>all three bureaus</b>${r.score_used!=null?` · judged at your lowest (<b>${r.score_used}</b>)`:""}`;
+    const b=nm[r.pull_bureau]||"Experian";
+    return `Typically pulls <b>${b}</b>${r.score_used!=null?` · judged at <b>${r.score_used}</b>`:""}`;}
   function featuredHTML(t,lede){const f=t.features||{};
     return `<div class="top"><div>${cardArt(t,300,190)}</div>
       <div>${lede?`<div class="lede">${lede}</div>`:""}<div class="tname">${esc(t.card_name)}</div>
@@ -319,7 +360,7 @@
           <div><div class="k">Rewards</div><div class="v">${esc((f.rewards||"—").slice(0,30))}</div></div></div>
         <div class="tactions"><button class="btn" data-apply="${t.card_id}">Apply →</button>
           <div class="fb" data-card="${t.card_id}" data-pct="${t.approval_probability}"><span>Applied?</span><button data-outcome="approved">Approved</button><button data-outcome="denied">Denied</button></div></div>
-        ${f.last_updated?`<p class="stamp">Features as of ${esc(f.last_updated)} — verify current terms with the issuer.</p>`:""}</div></div>`;}
+        <p class="pull-line">${pullLine(t)}</p>${f.last_updated?`<p class="stamp">Features as of ${esc(f.last_updated)} — verify current terms with the issuer. Bureau pulls vary by state.</p>`:""}</div></div>`;}
   function wireActions(c){if(!c)return;c.querySelectorAll("[data-apply]").forEach(b=>b.onclick=(e)=>{e.stopPropagation();openApply(b.dataset.apply);});
     c.querySelectorAll(".fb").forEach(fb=>fb.querySelectorAll("button").forEach(b=>b.onclick=(e)=>{e.stopPropagation();sendFeedback(fb,b.dataset.outcome);}));fillRings(c);}
   function toggleRow(row){const det=row.nextElementSibling,id=row.dataset.id,open=row.classList.contains("open");
@@ -434,8 +475,7 @@
 
   // ---- legal content (starter templates — review with counsel) ----
   const LEGAL={
-    privacy:`<h2>Privacy Policy</h2><p class="mt">Last updated 2026 · Bravox (bravoxcredit.com)</p>
-      <div class="tpl">Starter template — not legal advice. A credit/fintech service has heightened obligations (GLBA, CCPA and other state laws, FTC). Have this reviewed by a qualified attorney before relying on it.</div>
+    privacy:`<h2>Privacy Policy</h2><p class="mt">Last updated October 2026 · Bravox · bravoxcredit.com</p>
       <h3>What we collect</h3><ul>
       <li><b>Account data</b> — your email and a securely hashed password.</li>
       <li><b>Information you enter</b> — credit score, utilization, and inquiries you type in. We do <b>not</b> pull your credit report and never ask for your SSN.</li>
@@ -446,14 +486,13 @@
       <h3>Email</h3><p>If you opt in at sign-up, we may send automated emails (tips, updates, your results). Every email includes a one-click unsubscribe, and you can opt out anytime.</p>
       <h3>Sharing</h3><p>We do not sell your personal information. When you click an Apply link, you are taken to the card issuer or an affiliate partner; we do not pass them the numbers you entered.</p>
       <h3>Your choices</h3><p>You can request access to, or deletion of, your data, and you can delete your account. Contact us at privacy@bravoxcredit.com.</p>`,
-    terms:`<h2>Terms of Service</h2><p class="mt">Last updated 2026</p>
-      <div class="tpl">Starter template — not legal advice. Review with an attorney before use.</div>
+    terms:`<h2>Terms of Service</h2><p class="mt">Last updated October 2026 · Bravox · bravoxcredit.com</p>
       <h3>What Bravox is</h3><p>Bravox provides <b>estimated</b> credit-card approval odds for informational purposes. It is not a guarantee of approval, not a credit decision, and not financial, legal, or credit-repair advice. Bravox is not a lender and not a consumer reporting agency.</p>
       <h3>Soft check only</h3><p>Bravox never performs a hard credit pull and never accesses your real credit report. Estimates are based on information you provide and public underwriting patterns.</p>
       <h3>Your account</h3><p>Keep your login secure. You are responsible for activity under your account.</p>
       <h3>Affiliate links</h3><p>Some Apply links are affiliate links; Bravox may earn a commission if you are approved. This never affects your odds or how cards are ranked.</p>
       <h3>No warranty &amp; liability</h3><p>The service is provided "as is" without warranties. To the extent permitted by law, Bravox is not liable for decisions made based on its estimates.</p>
-      <h3>Changes</h3><p>We may update these terms; continued use means acceptance. Governing law: [your state].</p>`,
+      <h3>Changes &amp; contact</h3><p>We may update these terms; continued use means acceptance. These terms are governed by the laws of the United States. Questions: legal@bravoxcredit.com.</p>`,
     disc:`<h2>Disclosures</h2>
       <h3>Advertiser / affiliate disclosure</h3><p>Bravox may receive compensation when you are approved for a card through links on this site. Compensation never influences your estimated approval odds, which cards appear, or how they are ranked. This is how we keep the tool free.</p>
       <h3>Accuracy of estimates</h3><p>Underwriting thresholds used in our model are informed estimates assembled from public sources, not published issuer cutoffs. Real approval decisions also weigh income, debt-to-income, account history, and internal issuer factors we cannot see. Always verify current card terms with the issuer.</p>`

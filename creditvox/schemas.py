@@ -13,10 +13,16 @@ from pydantic import BaseModel, Field
 
 
 class ProfileIn(BaseModel):
-    score: int = Field(..., ge=300, le=850)
+    score: int = Field(..., ge=300, le=850)   # primary / fallback score
     utilization: float = Field(..., ge=0, le=100)
     inquiries: int = Field(..., ge=0, le=50)
     new_accounts_24mo: Optional[int] = Field(None, ge=0, le=50)
+    # Optional per-bureau scores; each card is judged against the bureau its
+    # issuer typically pulls. Omit to use `score` everywhere.
+    experian: Optional[int] = Field(None, ge=300, le=850)
+    equifax: Optional[int] = Field(None, ge=300, le=850)
+    transunion: Optional[int] = Field(None, ge=300, le=850)
+    model: Literal["FICO", "VantageScore"] = "FICO"
 
 
 class ConsentIn(BaseModel):
@@ -52,6 +58,9 @@ class MatchResult(BaseModel):
     annual_fee: int
     image_url: str = ""
     features: dict = Field(default_factory=dict)
+    pull_bureau: str = "experian"
+    pull_model: str = "FICO"
+    score_used: Optional[int] = None
     eligible: bool
     approval_probability: float
     fit_score: float

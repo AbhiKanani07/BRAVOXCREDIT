@@ -88,6 +88,10 @@ class Card:
     chase_5_24: bool = False  # optional issuer rule: auto-deny if >=5 new accts/24mo
     image_url: str = ""       # licensed card art URL; blank -> frontend placeholder
     features: CardFeatures = field(default_factory=CardFeatures)
+    # Which bureau this issuer *typically* pulls (approximate; varies by state and
+    # applicant). Values: experian | equifax | transunion | all | none.
+    pull_bureau: str = "experian"
+    pull_model: str = "FICO"  # issuers underwrite mostly on FICO, not VantageScore
 
     def to_dict(self) -> dict:
         d = asdict(self)              # recurses into CardFeatures automatically
@@ -542,11 +546,43 @@ CARD_FEATURES: dict[str, CardFeatures] = {
         last_updated=_TODAY),
 }
 
-# Merge features into the matrix (frozen dataclasses -> rebuild with replace()).
-CARD_MATRIX = [
-    replace(c, features=CARD_FEATURES[c.id]) if c.id in CARD_FEATURES else c
-    for c in CARD_MATRIX
-]
+# Typical pull bureau by issuer, from public community data (Doctor of Credit,
+# myFICO). APPROXIMATE: issuers don't disclose this, and it varies by state and
+# applicant. Amex ~Experian, BofA ~Experian, Chase/Citi/Discover/WF lean Experian,
+# Capital One pulls all three; OpenSky is no-credit-check.
+ISSUER_PULL = {
+    "American Express": "experian",
+    "Chase": "experian",
+    "Citi": "experian",
+    "Discover": "experian",
+    "Wells Fargo": "experian",
+    "Bank of America": "experian",
+    "Capital One": "all",
+    "Capital Bank": "none",
+}
+
+# Official issuer credit-card pages. These are NOT affiliate-tracked links — they
+# make the Apply buttons functional now. Replace each with your affiliate deep-link
+# (per card, in CARD_FEATURES[...].affiliate_url) once you join an affiliate program.
+ISSUER_APPLY = {
+    "American Express": "https://www.americanexpress.com/us/credit-cards/",
+    "Chase": "https://www.chase.com/personal/credit-cards",
+    "Citi": "https://www.citi.com/credit-cards/",
+    "Discover": "https://www.discover.com/credit-cards/",
+    "Wells Fargo": "https://www.wellsfargo.com/credit-cards/",
+    "Bank of America": "https://www.bankofamerica.com/credit-cards/",
+    "Capital One": "https://www.capitalone.com/credit-cards/",
+    "Capital Bank": "https://www.openskycc.com/",
+}
+
+# Merge features (+ apply URL) + pull bureau into the matrix (frozen -> replace()).
+def _merge_card(c):
+    feat = CARD_FEATURES.get(c.id, c.features)
+    if not feat.affiliate_url:   # don't clobber a real affiliate link if set
+        feat = replace(feat, affiliate_url=ISSUER_APPLY.get(c.issuer, ""))
+    return replace(c, features=feat, pull_bureau=ISSUER_PULL.get(c.issuer, "experian"))
+
+CARD_MATRIX = [_merge_card(c) for c in CARD_MATRIX]
 
 
 # ---------------------------------------------------------------------------
@@ -555,10 +591,30 @@ CARD_MATRIX = [
 
 @dataclass
 class UserProfile:
-    score: int                              # e.g. 300-850
+    score: int                              # primary / fallback score (300-850)
     utilization: float                      # aggregate util %, e.g. 12.5
     inquiries: int                          # hard inquiries, trailing ~24mo
     new_accounts_24mo: Optional[int] = None  # optional; only used for 5/24 cards
+    # Optional per-bureau scores. When provided, each card is evaluated against
+    # the score at the bureau that issuer typically pulls. Left blank -> `score`.
+    experian: Optional[int] = None
+    equifax: Optional[int] = None
+    transunion: Optional[int] = None
+    model: str = "FICO"                     # "FICO" | "VantageScore" (informational)
+
+    def score_for(self, bureau: str) -> int:
+        """The score to evaluate against for a card whose issuer pulls `bureau`.
+        'all' (e.g. Capital One, which triple-pulls) uses the weakest provided
+        bureau score — the conservative, honest reading. Missing data falls back
+        to the primary score."""
+        per = {"experian": self.experian, "equifax": self.equifax,
+               "transunion": self.transunion}
+        if bureau == "all":
+            vals = [v for v in per.values() if v is not None]
+            return min(vals) if vals else self.score
+        if bureau in per and per[bureau] is not None:
+            return per[bureau]
+        return self.score
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -609,7 +665,9 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
     probability, a human label, and per-filter reasons (for the "why / why not"
     UI that a real pre-approval tool shows).
     """
-    user_tier = score_to_tier(profile.score)
+    # Evaluate against the score at the bureau this issuer typically pulls.
+    eff_score = profile.score_for(card.pull_bureau)
+    user_tier = score_to_tier(eff_score)
     reasons: list[str] = []
     eligible = True
 
@@ -651,6 +709,9 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
             "annual_fee": card.annual_fee,
             "image_url": card.image_url,
             "features": asdict(card.features),
+            "pull_bureau": card.pull_bureau,
+            "pull_model": card.pull_model,
+            "score_used": eff_score,
             "eligible": False,
             "approval_probability": 0.0,
             "fit_score": 0.0,
@@ -660,7 +721,7 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
 
     # --- Margin scoring (how *safely* did they clear each threshold) ---------
     score_factor = _clamp(
-        (profile.score - TIER_FLOOR[card.min_tier]) / SCORE_RUNWAY
+        (eff_score - TIER_FLOOR[card.min_tier]) / SCORE_RUNWAY
     )
 
     # Relative headroom under the utilization ceiling. Lower util => higher.
@@ -700,6 +761,9 @@ def evaluate_card(profile: UserProfile, card: Card) -> dict:
         "annual_fee": card.annual_fee,
         "image_url": card.image_url,
         "features": asdict(card.features),
+        "pull_bureau": card.pull_bureau,
+        "pull_model": card.pull_model,
+        "score_used": eff_score,
         "eligible": True,
         "approval_probability": probability,
         "fit_score": fit_score,
@@ -756,17 +820,18 @@ def near_misses(profile: UserProfile, matrix: list[Card] = CARD_MATRIX) -> list[
     small, achievable margin (so we never nudge someone toward a card that's
     realistically years away).
     """
-    user_tier = score_to_tier(profile.score)
     out: list[dict] = []
 
     for card in matrix:
+        eff_score = profile.score_for(card.pull_bureau)
+        user_tier = score_to_tier(eff_score)
         hints: list[str] = []
         achievable = True
 
         # Score: only "near" if within NEAR_SCORE_POINTS of the required floor.
         if user_tier < card.min_tier:
             floor = TIER_FLOOR[card.min_tier]
-            gap = floor - profile.score
+            gap = floor - eff_score
             if 0 < gap <= NEAR_SCORE_POINTS:
                 hints.append(f"Raise your score ~{gap} points")
             else:

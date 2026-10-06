@@ -66,3 +66,30 @@ def test_include_ineligible_returns_reasons():
     full = match_cards(weak, include_ineligible=True)
     inelig = [m for m in full if not m["eligible"]]
     assert inelig and all(m["reasons"] for m in inelig)
+
+
+def test_score_for_picks_right_bureau():
+    p = UserProfile(score=700, utilization=10, inquiries=1,
+                    experian=760, equifax=665, transunion=720)
+    assert p.score_for("experian") == 760
+    assert p.score_for("all") == 665          # weakest of provided (conservative)
+    assert p.score_for("equifax") == 665
+    assert p.score_for("transunion") == 720
+
+
+def test_per_bureau_changes_eligibility():
+    # Strong Experian, weak Equifax: Experian-pulling issuers judge you higher
+    # than Capital One (pulls all three -> uses your weakest).
+    p = UserProfile(score=700, utilization=10, inquiries=1,
+                    experian=760, equifax=640)
+    chase = evaluate_card(p, next(c for c in CARD_MATRIX if c.id == "chase_freedom_unlimited"))
+    capone = evaluate_card(p, next(c for c in CARD_MATRIX if c.id == "capone_quicksilver"))
+    assert chase["score_used"] == 760
+    assert capone["score_used"] == 640
+    assert chase["pull_bureau"] == "experian" and capone["pull_bureau"] == "all"
+
+
+def test_single_score_fallback_unchanged():
+    # No per-bureau scores -> every card uses the primary score (old behavior).
+    p = UserProfile(score=710, utilization=15, inquiries=1)
+    assert all(r["score_used"] == 710 for r in match_cards(p))
