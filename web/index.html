@@ -4,540 +4,479 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Bravox — know your card approval odds</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet"/>
 <style>
-  :root{ --bg:#06090F; --panel:#0E1420; --panel-2:#151C2A; --line:#1F293B; --ink:#F3F6FC; --muted:#8694AE; --faint:#4F5C76;
-    --accent:#2F6BFF; --accent-bright:#5B8BFF; --accent-press:#2457D6; --warn:#f0a93b; }
-  *{box-sizing:border-box;} html{-webkit-text-size-adjust:100%;}
-  body{margin:0;background:radial-gradient(1100px 650px at 72% -8%,rgba(47,107,255,.10),transparent 58%),var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.6;}
+  :root{--bg:#090D15;--surface:rgba(255,255,255,.028);--surface-2:rgba(255,255,255,.05);
+    --line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.14);--ink:#EDF1F8;--muted:#8793A8;--faint:#5A6679;
+    --accent:#3C78FF;--accent-bright:#6E9BFF;--accent-press:#2E62DC;--pos:#43d98a;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:
+      radial-gradient(900px 520px at 80% -6%,rgba(60,120,255,.12),transparent 60%),
+      radial-gradient(760px 520px at 4% 112%,rgba(60,120,255,.06),transparent 60%),var(--bg);
+    color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.6;}
+  .disp{font-family:"Space Grotesk",sans-serif;letter-spacing:-.015em;}
+  a{color:var(--accent-bright);text-decoration:none;}
   #stars{position:fixed;inset:0;z-index:-2;pointer-events:none;}
-  .delta{font-size:12px;margin-top:8px;font-weight:600;} .delta.flat{color:var(--muted);}
-  .disp{font-family:"Fraunces",Georgia,serif;letter-spacing:-.015em;}
-  .num{font-variant-numeric:tabular-nums;}
-  a{color:var(--accent-bright);}
 
-  /* top bar */
-  .topbar{display:flex;align-items:center;gap:26px;padding:17px 32px;border-bottom:1px solid var(--line);
-    position:sticky;top:0;background:rgba(6,9,15,.9);backdrop-filter:blur(12px);z-index:20;}
-  .mark{font-family:"Fraunces",serif;font-weight:700;font-size:25px;letter-spacing:-.02em;cursor:pointer;}
-  .mark .x{color:var(--accent);}
-  .search{flex:1;max-width:380px;display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);
-    border-radius:11px;padding:0 13px;}
-  .search input{flex:1;background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;padding:10px 0;outline:none;}
-  .search input::placeholder{color:var(--faint);}
-  .tabs{display:flex;gap:2px;margin-left:auto;}
-  .tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:500;padding:9px 15px;border-radius:9px;cursor:pointer;}
-  .tabs button.on{color:var(--ink);background:var(--panel-2);} .tabs button:hover{color:var(--ink);}
-  .authbar{display:flex;align-items:center;gap:6px;}
-  .authbar .email{color:var(--faint);font-size:13px;padding:0 6px;}
-  .btn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;font-size:14px;padding:10px 20px;border-radius:11px;cursor:pointer;transition:background .15s;}
+  /* ---- professional top nav ---- */
+  .topnav{display:flex;align-items:center;gap:8px;padding:15px 40px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:rgba(9,13,21,.82);backdrop-filter:blur(14px);z-index:30;}
+  .logo{display:flex;align-items:center;cursor:pointer;margin-right:20px;}
+  .logo img{height:30px;width:auto;display:block;} .logo .txt{font-family:"Space Grotesk";font-weight:600;font-size:22px;letter-spacing:-.02em;} .logo .txt .x{color:var(--accent);}
+  .nav{display:flex;align-items:center;gap:2px;}
+  .nav button{background:transparent;border:0;color:var(--muted);font:inherit;font-size:14.5px;font-weight:500;padding:10px 4px;margin:0 14px;cursor:pointer;
+    border-bottom:2px solid transparent;transition:color .15s,border-color .15s;}
+  .nav button:hover{color:var(--ink);} .nav button.on{color:var(--ink);border-bottom-color:var(--accent);}
+  .authbar{margin-left:auto;display:flex;align-items:center;gap:16px;}
+  .authbar .em{color:var(--muted);font-size:13.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .authbar .lk{color:var(--muted);cursor:pointer;background:none;border:0;font:inherit;font-size:14px;padding:6px;} .authbar .lk:hover{color:var(--ink);}
+
+  .main{padding:48px 40px 100px;max-width:1200px;margin:0 auto;width:100%;}
+
+  /* expandable card detail (accordion) */
+  .detail{overflow:hidden;max-height:0;opacity:0;transition:max-height .45s cubic-bezier(.2,.7,.2,1),opacity .3s ease,margin .3s ease;}
+  .detail.open{max-height:1200px;opacity:1;margin:6px 0 14px;}
+  .r.exp{grid-template-columns:120px 1fr auto 20px;}
+  .r .chev{color:var(--faint);font-size:17px;transition:transform .3s ease;text-align:center;} .r.open .chev{transform:rotate(90deg);color:var(--accent);}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .view{display:none;} .view.show{display:block;animation:fadeUp .45s cubic-bezier(.2,.7,.2,1) both;}
+
+  .btn{border:0;background:var(--accent);color:#fff;font-family:"Space Grotesk";font-weight:500;font-size:14px;padding:12px 22px;border-radius:12px;cursor:pointer;transition:background .15s;}
   .btn:hover{background:var(--accent-bright);} .btn:active{background:var(--accent-press);} .btn:disabled{opacity:.5;cursor:not-allowed;}
-  .btn.ghost{background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:var(--ink);}
-  .btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent-bright);}
-  .linkbtn{border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;padding:9px 12px;border-radius:9px;cursor:pointer;}
-  .linkbtn:hover{color:var(--ink);}
+  .btn.ghost{background:transparent;box-shadow:inset 0 0 0 1px var(--line-2);color:var(--ink);} .btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent-bright);}
 
-  .app{max-width:1160px;margin:0 auto;padding:36px 32px 120px;}
-  .crumb{color:var(--faint);font-size:12px;letter-spacing:.08em;margin-bottom:10px;}
-  .page-title{font-family:"Fraunces",serif;font-weight:600;font-size:32px;letter-spacing:-.02em;margin:0 0 6px;line-height:1.05;}
-  .page-sub{color:var(--muted);font-size:15.5px;margin:0;} .page-sub b{color:var(--ink);}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:6px;}
+  h1.title{font-family:"Space Grotesk";font-weight:600;font-size:28px;letter-spacing:-.02em;margin:0;}
+  .note{color:var(--faint);font-size:12.5px;margin:0 0 30px;}
+  .pills{display:flex;gap:8px;flex-wrap:wrap;} .pill{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 13px;} .pill b{color:var(--ink);font-weight:600;}
 
-  /* CHECK view */
-  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center;margin-bottom:40px;}
-  .hero h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(32px,3.6vw,46px);line-height:1.04;letter-spacing:-.025em;margin:0 0 18px;}
-  .hero p{color:var(--muted);font-size:18px;max-width:40ch;margin:0;}
-  .herodemo{background:radial-gradient(130% 150% at 85% 0%,rgba(47,107,255,.14),transparent 55%),var(--panel);
-    border:1px solid var(--line);border-radius:20px;padding:26px;text-align:center;position:relative;}
-  .herodemo .tag{position:absolute;top:16px;right:18px;font-size:11px;color:var(--faint);letter-spacing:.07em;}
-  .herodemo .dn{font-family:"Fraunces",serif;font-weight:600;font-size:17px;margin-top:2px;} .herodemo .dc{font-size:13px;color:var(--muted);margin-bottom:10px;}
-  .herodemo .df{font-size:12px;color:var(--muted);margin-top:8px;}
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:30px;}
-  .field-label{font-size:13px;color:var(--muted);margin:0 0 8px;}
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);}
-  .seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;padding:10px 18px;cursor:pointer;}
-  .seg button[aria-pressed="true"]{background:var(--panel-2);color:var(--ink);font-weight:600;border-radius:11px;}
-  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:22px;}
-  input[type=number],input[type=email],input[type=password]{width:100%;font:inherit;color:var(--ink);padding:13px 14px;
-    border:1px solid var(--line);border-radius:11px;background:var(--bg);}
+  /* ---- CHECK ---- */
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;margin-bottom:34px;}
+  .hero h2{font-family:"Space Grotesk";font-weight:600;font-size:clamp(30px,3.4vw,42px);line-height:1.06;letter-spacing:-.025em;margin:0 0 16px;}
+  .hero p{color:var(--muted);font-size:17px;max-width:40ch;margin:0;}
+  .herocard{background:linear-gradient(160deg,rgba(60,120,255,.08),transparent 55%),var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px;text-align:center;display:flex;flex-direction:column;align-items:center;}
+  .herocard .art{filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));margin-bottom:16px;}
+  .herocard .w{font-family:"Space Grotesk";font-weight:600;font-size:20px;} .herocard .m{color:var(--faint);font-size:12.5px;margin-top:4px;}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px;}
+  .flabel{font-size:13px;color:var(--muted);margin:0 0 7px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:rgba(0,0,0,.2);}
+  .seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;padding:10px 17px;cursor:pointer;} .seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink);font-weight:600;border-radius:11px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:20px;}
+  input[type=number],input[type=email],input[type=password],.search input{width:100%;font:inherit;color:var(--ink);padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:rgba(0,0,0,.25);}
   input:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent;}
-  .consent{margin-top:20px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-size:14px;color:var(--muted);}
-  .consent label{display:flex;gap:11px;align-items:flex-start;margin-top:11px;color:var(--ink);cursor:pointer;}
-  .consent input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px;}
-  .rowb{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:24px;}
-  .status{margin-top:20px;font-size:14px;color:var(--muted);min-height:1.2em;} .status.error{color:#ff6b6b;}
+  .consent{margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.2);font-size:14px;color:var(--muted);}
+  .consent label{display:flex;gap:10px;align-items:flex-start;margin-top:10px;color:var(--ink);cursor:pointer;} .consent input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px;}
+  .rowb{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:22px;}
+  .status{margin-top:18px;font-size:14px;color:var(--muted);min-height:1.2em;} .status.error{color:#ff6b6b;}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
+  .chip{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:9px 16px 9px 10px;cursor:pointer;font-weight:500;font-size:14px;transition:border-color .15s,background .15s;}
+  .chip:hover{border-color:var(--accent);background:var(--surface-2);} .chip .dot{width:20px;height:20px;border-radius:50%;flex:0 0 auto;}
+  .seclabel{font-size:12.5px;color:var(--muted);letter-spacing:.02em;margin:38px 0 14px;font-weight:500;}
 
-  /* MATCHES view */
-  .shell{display:grid;grid-template-columns:1fr 330px;gap:34px;margin-top:28px;align-items:start;}
-  .featured{border:1px solid var(--line);border-radius:20px;padding:30px;
-    background:radial-gradient(120% 150% at 88% -10%,rgba(47,107,255,.14),transparent 55%),var(--panel);}
-  .feat-tag{font-size:12px;color:var(--accent-bright);font-weight:600;letter-spacing:.06em;}
-  .feat-body{display:flex;gap:26px;align-items:center;margin-top:16px;}
-  .feat-art{width:158px;height:100px;border-radius:12px;overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.6);flex:0 0 auto;}
-  .feat-art svg,.feat-art img{width:100%;height:100%;display:block;object-fit:cover;}
-  .feat-name{font-family:"Fraunces",serif;font-weight:600;font-size:28px;letter-spacing:-.01em;}
-  .feat-rw{color:var(--muted);font-size:15px;margin-top:8px;max-width:42ch;}
-  .feat-gauge{margin-left:auto;text-align:center;flex:0 0 auto;} .feat-gauge .cap{font-size:11px;color:var(--muted);margin-top:4px;}
-  .feat-word{font-size:17px;font-weight:600;margin-top:10px;letter-spacing:-.01em;}
-  .feat-cells{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:24px;}
-  .feat-cells>div{background:var(--panel);padding:14px 16px;} .fk{font-size:11px;color:var(--faint);} .fv{font-size:14px;margin-top:4px;}
-  .feat-actions{display:flex;gap:11px;margin-top:22px;}
-  .feat-stamp{font-size:11px;color:var(--faint);margin-top:14px;}
+  /* ---- metallic card art (shared) ---- */
+  .art svg,.art img,svg.art,img.art{display:block;}
 
-  .list-head{display:flex;align-items:baseline;justify-content:space-between;margin:36px 0 12px;}
-  .list-head h2{font-family:"Fraunces",serif;font-weight:600;font-size:20px;margin:0;}
-  .list{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);}
-  .row{display:grid;grid-template-columns:auto 1fr auto auto;gap:17px;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
-  .row:last-child{border-bottom:0;} .row:hover{background:var(--panel-2);}
-  .thumb{width:64px;height:40px;border-radius:7px;overflow:hidden;box-shadow:0 2px 9px rgba(0,0,0,.5);flex:0 0 auto;}
-  .thumb svg,.thumb img{width:100%;height:100%;display:block;object-fit:cover;}
-  .rname{font-weight:600;font-size:15.5px;} .rrw{color:var(--muted);font-size:13px;margin-top:2px;max-width:48ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .odds{text-align:center;} .odds .v{font-weight:700;font-size:16px;} .odds .l{font-size:10px;color:var(--faint);}
-  .mini{border:0;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink);font:inherit;font-weight:600;font-size:13px;padding:8px 14px;border-radius:10px;cursor:pointer;}
-  .mini:hover{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent-bright);}
-  .ineligible{opacity:.52;}
+  /* ---- MATCHES ---- */
+  .top{display:grid;grid-template-columns:320px 1fr;gap:40px;align-items:center;
+    background:linear-gradient(160deg,rgba(60,120,255,.07),transparent 55%),var(--surface);
+    border:1px solid var(--line);border-radius:22px;padding:34px;box-shadow:0 30px 70px -36px rgba(0,0,0,.7);}
+  .top .art{filter:drop-shadow(0 24px 48px rgba(0,0,0,.55));}
+  .lede{font-size:12.5px;color:var(--accent-bright);font-weight:500;}
+  .tname{font-family:"Space Grotesk";font-weight:600;font-size:27px;letter-spacing:-.015em;margin:11px 0 0;}
+  .tdesc{color:var(--muted);font-size:15px;margin:13px 0 0;max-width:48ch;}
+  .oddsflex{display:flex;align-items:center;gap:20px;margin-top:24px;}
+  .oddsflex .w{font-family:"Space Grotesk";font-weight:600;font-size:21px;} .oddsflex .m{color:var(--faint);font-size:12.5px;margin-top:3px;}
+  .specs{display:flex;gap:32px;margin-top:24px;flex-wrap:wrap;} .specs .k{font-size:11.5px;color:var(--faint);} .specs .v{font-size:15px;margin-top:4px;font-weight:500;}
+  .tactions{display:flex;align-items:center;gap:16px;margin-top:26px;flex-wrap:wrap;}
+  .stamp{font-size:11px;color:var(--faint);margin-top:14px;}
+  /* list rows: NO ring — word + % text only */
+  .rows{display:flex;flex-direction:column;}
+  .r{display:grid;grid-template-columns:120px 1fr auto;gap:26px;align-items:center;padding:20px 10px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:12px;transition:background .15s;}
+  .r:hover{background:var(--surface);} .r .art{filter:drop-shadow(0 10px 22px rgba(0,0,0,.45));}
+  .r .rn{font-family:"Space Grotesk";font-weight:500;font-size:16.5px;} .r .rd{color:var(--muted);font-size:13.5px;margin-top:4px;max-width:54ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .r .ro{text-align:right;min-width:120px;} .r .ro .w{font-weight:600;font-size:14.5px;} .r .ro .p{color:var(--faint);font-size:12px;margin-top:2px;}
+  .fb{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+  .fb button{border:1px solid var(--line-2);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;padding:7px 13px;border-radius:9px;cursor:pointer;} .fb button:hover{border-color:var(--accent);color:var(--accent-bright);} .fb .done{color:var(--accent-bright);font-weight:600;}
 
-  aside{position:sticky;top:94px;display:flex;flex-direction:column;gap:18px;}
-  .rail{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:20px;}
-  .rail-k{font-size:12px;color:var(--muted);margin:0 0 14px;}
-  .scoremini{display:flex;align-items:center;gap:16px;} .scoremini .big{font-family:"Fraunces",serif;font-weight:700;font-size:42px;line-height:1;} .scoremini .st{font-size:12px;color:var(--muted);margin-top:4px;}
-  .watch{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);} .watch:last-child{border-bottom:0;}
-  .watch .thumb{width:48px;height:30px;} .wname{font-size:13.5px;font-weight:600;} .whint{font-size:11.5px;color:var(--accent-bright);margin-top:1px;}
+  /* ---- EXPLORE ---- */
+  .search{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 13px;max-width:420px;margin-bottom:8px;}
+  .search input{border:0;background:transparent;padding:11px 0;} .search input:focus-visible{outline:none;}
+  .cat{margin-top:28px;} .cat h3{font-family:"Space Grotesk";font-weight:600;font-size:18px;margin:0 0 3px;} .cat .sub{color:var(--muted);font-size:13px;margin:0 0 12px;}
 
-  .fb{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-top:4px;}
-  .fb button{border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:12.5px;padding:6px 12px;border-radius:8px;cursor:pointer;}
-  .fb button:hover{border-color:var(--accent);color:var(--accent-bright);} .fb .done{color:var(--accent-bright);font-weight:600;}
+  /* ---- DASHBOARD ---- */
+  .dtop{display:flex;align-items:center;gap:30px;margin-bottom:10px;flex-wrap:wrap;}
+  .dscore{text-align:center;} .dscore .delta{font-size:12px;margin-top:8px;font-weight:600;} .dscore .delta.flat{color:var(--muted);}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:20px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;} .stat .k{font-size:12px;color:var(--muted);} .stat .v{font-family:"Space Grotesk";font-weight:600;font-size:28px;margin-top:7px;font-variant-numeric:tabular-nums;} .stat .v small{font-size:14px;color:var(--muted);}
+  .chartwrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:20px;}
+  .ctabs{display:flex;gap:4px;margin-bottom:14px;} .ctabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;cursor:pointer;} .ctabs button[aria-pressed="true"]{color:var(--accent-bright);background:var(--surface-2);font-weight:600;}
+  .chartwrap svg{width:100%;height:auto;display:block;} .legend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:12px;} .legend i{display:inline-block;width:11px;height:3px;border-radius:2px;margin-right:7px;vertical-align:middle;}
+  .nudge{display:flex;align-items:center;gap:14px;padding:14px 10px;border-bottom:1px solid var(--line);} .nudge .art{filter:drop-shadow(0 8px 18px rgba(0,0,0,.4));} .nudge .n-name{font-weight:500;font-family:"Space Grotesk";} .nudge .n-hint{font-size:13px;color:var(--accent-bright);margin-top:2px;}
+  .hrow{display:flex;justify-content:space-between;gap:12px;padding:15px 10px;border-bottom:1px solid var(--line);font-size:14px;} .hrow .when{color:var(--faint);font-size:12px;margin-top:2px;}
+  .empty{color:var(--muted);font-size:14.5px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px;text-align:center;display:flex;flex-direction:column;align-items:center;} .empty .btn{margin-top:14px;}
 
-  /* EXPLORE */
-  .cat{margin-top:30px;} .cat h3{font-family:"Fraunces",serif;font-weight:600;font-size:21px;margin:0 0 3px;} .cat .sub{color:var(--muted);font-size:13px;margin:0 0 14px;}
+  .ring-fg{transition:stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1);}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .stagger>.r{animation:rise .5s cubic-bezier(.2,.7,.2,1) both;}
+  @media(prefers-reduced-motion:reduce){.view.show,.stagger>*{animation:none;} .ring-fg{transition:none;}}
 
-  /* DASHBOARD */
-  .dash-top{display:flex;align-items:center;gap:32px;margin-bottom:8px;flex-wrap:wrap;}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px;}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;}
-  .stat .k{font-size:12px;color:var(--muted);} .stat .v{font-family:"Fraunces",serif;font-weight:700;font-size:32px;margin-top:8px;}
-  .stat .v small{font-size:15px;color:var(--muted);font-weight:500;font-family:Inter;}
-  .chart-wrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:22px;}
-  .chart-tabs{display:flex;gap:4px;margin-bottom:16px;}
-  .chart-tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;padding:6px 13px;border-radius:8px;cursor:pointer;}
-  .chart-tabs button[aria-pressed="true"]{color:var(--accent-bright);background:var(--panel-2);font-weight:600;}
-  .chart-wrap svg{width:100%;height:auto;display:block;} .legend{display:flex;gap:20px;font-size:12px;color:var(--muted);margin-top:14px;} .legend i{display:inline-block;width:11px;height:3px;border-radius:2px;margin-right:7px;vertical-align:middle;}
-  .nudge{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 17px;margin-bottom:10px;}
-  .nudge .thumb{width:64px;height:40px;} .nudge .n-name{font-weight:600;} .nudge .n-hint{font-size:13px;color:var(--accent-bright);margin-top:2px;}
-  .hist-row{display:flex;justify-content:space-between;gap:12px;padding:15px 17px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;font-size:14px;background:var(--panel);}
-  .hist-row .when{color:var(--muted);font-size:12px;margin-top:2px;}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:20px;z-index:60;backdrop-filter:blur(4px);}
+  .modal-bg.open{display:flex;} .modal{background:#0E1420;border:1px solid var(--line-2);border-radius:18px;padding:28px;width:100%;max-width:390px;}
+  .modal h3{font-family:"Space Grotesk";margin:0 0 5px;font-size:22px;} .modal p.sub{margin:0 0 18px;color:var(--muted);font-size:14px;}
+  .modal label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;} .modal .r2{display:flex;align-items:center;justify-content:space-between;margin-top:22px;gap:12px;}
+  .modal .msg{font-size:13px;color:#ff6b6b;min-height:1.1em;margin-top:10px;} .modal .switch{font-size:13px;color:var(--muted);margin-top:16px;text-align:center;}
+  .linkbtn{border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;padding:6px;} .linkbtn:hover{color:var(--ink);}
 
-  .section-head{font-family:"Fraunces",serif;font-weight:600;font-size:20px;margin:36px 0 14px;}
-  .empty{color:var(--muted);font-size:14.5px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center;}
-  .empty .btn{margin-top:14px;}
-  .foot{max-width:1200px;margin:0 auto;padding:0 32px 60px;font-size:12px;color:var(--faint);line-height:1.6;}
-  .hidden{display:none!important;}
-  .ring-fg{transition:stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1);}
-  @media(prefers-reduced-motion:reduce){.ring-fg{transition:none;}}
+  @media(max-width:880px){.app{grid-template-columns:1fr;} .rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;} .nav{flex-direction:row;flex:0 0 auto;} .railfoot{border:0;padding:0;margin-left:auto;flex-direction:row;align-items:center;}
+    .main{padding:28px 22px 90px;} .hero,.top{grid-template-columns:1fr;} .grid4{grid-template-columns:repeat(2,1fr);} .stats{grid-template-columns:1fr;} .r{grid-template-columns:90px 1fr;} }
 
-  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:20px;z-index:60;}
-  .modal-bg.open{display:flex;} .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:30px;width:100%;max-width:400px;}
-  .modal h3{font-family:"Fraunces",serif;margin:0 0 5px;font-size:24px;} .modal p.sub{margin:0 0 20px;color:var(--muted);font-size:14px;}
-  .modal label{display:block;font-size:13px;color:var(--muted);margin:15px 0 6px;}
-  .modal .r{display:flex;align-items:center;justify-content:space-between;margin-top:24px;gap:12px;}
-  .modal .msg{font-size:13px;color:#ff6b6b;min-height:1.1em;margin-top:11px;} .modal .switch{font-size:13px;color:var(--muted);margin-top:17px;text-align:center;}
+  /* results gate (drives sign-ups) */
+  .gate{max-width:560px;margin:10px auto 0;text-align:center;background:linear-gradient(160deg,rgba(60,120,255,.08),transparent 60%),var(--surface);border:1px solid var(--line);border-radius:20px;padding:44px 34px;}
+  .gate-ic{width:48px;height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--accent);font-size:22px;}
+  .gate h2{font-family:"Space Grotesk";font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 10px;}
+  .gate p{color:var(--muted);font-size:15px;margin:0 auto 22px;max-width:40ch;} .gate p b{color:var(--ink);}
+  .gate .btn{font-size:15px;padding:13px 28px;} .gate-login{margin-top:18px!important;font-size:13px;}
+  .consent-tag{font-size:11.5px;color:var(--faint);line-height:1.5;margin:14px 0 0;text-align:center;}
 
-  @media(max-width:920px){ .hero{grid-template-columns:1fr;gap:32px;} .shell{grid-template-columns:1fr;} aside{position:static;}
-    .grid4,.feat-cells{grid-template-columns:repeat(2,1fr);} .stats{grid-template-columns:1fr;} .search{display:none;} .app{padding:28px 20px 100px;} }
-
-  /* RH promo bar */
-  .promo{display:flex;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:linear-gradient(90deg,rgba(47,107,255,.18),rgba(47,107,255,.05));border-bottom:1px solid var(--line);font-size:13.5px;}
-  .promo a{color:var(--accent-bright);font-weight:600;text-decoration:none;cursor:pointer;} .promo a:hover{text-decoration:underline;}
-  .promo .close{margin-left:6px;background:transparent;border:0;color:var(--faint);cursor:pointer;font-size:16px;line-height:1;}
-  /* RH text nav */
-  .tabs button{background:transparent!important;color:var(--muted);font-weight:600;font-size:14.5px;padding:7px 2px;margin:0 13px;border-radius:0;border-bottom:2px solid transparent;}
-  .tabs button:hover{color:var(--ink);} .tabs button.on{background:transparent!important;color:var(--ink);border-bottom:2px solid var(--accent);}
-  /* account dropdown */
-  .acctbtn{display:flex;align-items:center;gap:6px;background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:8px 10px;border-radius:9px;}
-  .acctbtn:hover{background:var(--panel-2);}
-  .acctmenu{position:absolute;top:calc(100% + 8px);right:24px;width:236px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;z-index:40;box-shadow:0 20px 54px rgba(0,0,0,.65);display:none;}
-  .acctmenu.open{display:block;} .acctmenu .who{padding:10px 12px;font-weight:600;font-size:13.5px;color:var(--muted);border-bottom:1px solid var(--line);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;}
-  .acctmenu button{display:flex;align-items:center;gap:12px;width:100%;background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;padding:10px 12px;border-radius:9px;cursor:pointer;text-align:left;}
-  .acctmenu button:hover{background:var(--panel-2);} .acctmenu .ic{width:18px;text-align:center;color:var(--accent-bright);font-size:13px;}
-  /* RH section header */
-  .rh-head{font-family:Inter;font-weight:700;font-size:21px;letter-spacing:-.01em;margin:42px 0 16px;display:flex;align-items:center;gap:9px;}
-  .rh-head .i{width:15px;height:15px;border:1px solid var(--faint);border-radius:50%;color:var(--faint);font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-style:italic;}
-  /* category chips */
-  .chips{display:flex;flex-wrap:wrap;gap:10px;}
-  .chip{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:9px 17px 9px 9px;cursor:pointer;font-weight:600;font-size:14px;transition:border-color .15s,background .15s;}
-  .chip:hover{border-color:var(--accent);background:var(--panel-2);} .chip .dot{width:22px;height:22px;border-radius:50%;flex:0 0 auto;}
-  /* popular carousel */
-  .carousel{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory;}
-  .carousel::-webkit-scrollbar{height:8px;} .carousel::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;} .carousel::-webkit-scrollbar-track{background:transparent;}
-  .tile{flex:0 0 212px;scroll-snap-align:start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;transition:border-color .15s,transform .12s;}
-  .tile:hover{border-color:var(--accent);transform:translateY(-2px);} .tile .tart{width:100%;height:88px;border-radius:9px;overflow:hidden;margin-bottom:13px;box-shadow:0 4px 14px rgba(0,0,0,.45);}
-  .tile .tart svg,.tile .tart img{width:100%;height:100%;display:block;object-fit:cover;} .tile .tn{font-weight:600;font-size:14.5px;} .tile .ts{font-size:12.5px;color:var(--muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .footer{border-top:1px solid var(--line);margin:60px auto 0;padding:26px 40px;max-width:1200px;display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;font-size:12.5px;color:var(--faint);}
+  .footer a{color:var(--muted);cursor:pointer;} .footer a:hover{color:var(--ink);} .footer .disc{flex-basis:100%;line-height:1.6;margin:8px 0 0;}
+  .legal{max-width:760px;} .legal .tabs2{display:flex;gap:4px;margin-bottom:22px;flex-wrap:wrap;}
+  .legal .tabs2 button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;padding:8px 14px;border-radius:9px;cursor:pointer;} .legal .tabs2 button.on{background:var(--surface-2);color:var(--ink);font-weight:600;}
+  .legal h2{font-family:"Space Grotesk";font-weight:600;font-size:24px;margin:0 0 4px;} .legal .mt{color:var(--faint);font-size:12.5px;margin:0 0 18px;}
+  .legal h3{font-size:15px;font-weight:600;color:var(--ink);margin:22px 0 6px;} .legal p,.legal li{color:var(--muted);font-size:14px;line-height:1.65;} .legal ul{padding-left:20px;margin:6px 0;}
+  .legal .tpl{background:rgba(240,169,59,.08);border:1px solid rgba(240,169,59,.28);color:#e7b063;font-size:12.5px;padding:12px 14px;border-radius:10px;margin-bottom:22px;}
+  .cookie{position:fixed;left:20px;right:20px;bottom:20px;max-width:580px;margin:0 auto;background:#0E1420;border:1px solid var(--line-2);border-radius:14px;padding:15px 18px;z-index:55;display:none;box-shadow:0 20px 50px rgba(0,0,0,.6);}
+  .cookie.show{display:flex;align-items:center;gap:14px;flex-wrap:wrap;} .cookie p{margin:0;font-size:13px;color:var(--muted);flex:1;min-width:240px;} .cookie a{color:var(--accent-bright);cursor:pointer;}
+  .cookie .acts{display:flex;gap:8px;} .cookie button{font:inherit;font-size:13px;padding:8px 15px;border-radius:9px;cursor:pointer;border:0;} .cookie .acc{background:var(--accent);color:#fff;} .cookie .dec{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line-2);}
+  .affdisc{font-size:12px;color:var(--faint);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 20px;}
 </style>
 </head>
 <body>
-  <canvas id="stars"></canvas>
-  <div class="promo" id="promo"><span>New — compare your approval odds across 27 cards in one soft check.</span><a id="promo-cta">See how it works</a><button class="close" id="promo-x" aria-label="Dismiss">×</button></div>
-  <div class="topbar">
-    <div class="mark" id="mark"><img src="/assets/bravox-logo.png" alt="bravox" style="height:34px;width:auto;display:block" onerror="this.outerHTML='bravo<span class=&quot;x&quot;>x</span>'"/></div>
-    <div class="search"><span style="color:var(--faint)">⌕</span><input id="search" placeholder="Search cards or issuers…"/></div>
-    <div class="tabs" id="tabs"></div>
+<canvas id="stars"></canvas>
+<header class="topnav">
+    <div class="logo" id="logo"></div>
+    <nav class="nav" id="nav"></nav>
     <div class="authbar" id="authbar"></div>
-    <div class="acctmenu" id="acctmenu"></div>
-  </div>
+  </header>
 
-  <div class="app">
+  <main class="main">
     <!-- CHECK -->
-    <div id="v-check">
-      <section class="hero">
-        <div>
-          <h1>Know your approval odds before you apply.</h1>
-          <p>A soft check that estimates your odds across 27 popular cards in seconds. It never touches your credit score.</p>
-        </div>
-        <div class="herodemo" id="herodemo"><span class="tag">example</span></div>
-      </section>
-      <section class="panel" aria-label="Check your cards">
-        <p class="field-label">How should we get your numbers?</p>
-        <div class="seg" role="group"><button id="mode-manual" aria-pressed="true">Enter my numbers</button><button id="mode-pull" aria-pressed="false">Run a demo check</button></div>
+    <section class="view" id="v-check">
+      <div class="hero">
+        <div><h2>Know your approval odds before you apply.</h2>
+          <p>A soft check that estimates your odds across 27 cards in seconds. It never touches your credit score.</p></div>
+        <div class="herocard" id="herocard"></div>
+      </div>
+      <div class="panel">
+        <p class="flabel">How should we get your numbers?</p>
+        <div class="seg"><button id="mode-manual" aria-pressed="true">Enter my numbers</button><button id="mode-pull" aria-pressed="false">Run a demo check</button></div>
         <div class="grid4" id="manual-fields">
-          <div><p class="field-label">Credit score</p><input id="score" type="number" min="300" max="850" value="710"/></div>
-          <div><p class="field-label">Utilization %</p><input id="util" type="number" min="0" max="100" value="15"/></div>
-          <div><p class="field-label">Hard inquiries</p><input id="inq" type="number" min="0" max="50" value="1"/></div>
-          <div><p class="field-label">New accts / 24mo</p><input id="newacct" type="number" min="0" max="50" placeholder="optional"/></div>
+          <div><p class="flabel">Credit score</p><input id="score" type="number" min="300" max="850" value="710"/></div>
+          <div><p class="flabel">Utilization %</p><input id="util" type="number" min="0" max="100" value="15"/></div>
+          <div><p class="flabel">Hard inquiries</p><input id="inq" type="number" min="0" max="50" value="1"/></div>
+          <div><p class="flabel">New accts / 24mo</p><input id="newacct" type="number" min="0" max="50" placeholder="optional"/></div>
         </div>
-        <div class="consent hidden" id="consent-box">A demo check simulates a soft inquiry from a credit bureau. No real report is pulled and your score is never affected.
+        <div class="consent" id="consent-box" style="display:none">A demo check simulates a soft inquiry. No real report is pulled and your score is never affected.
           <label><input type="checkbox" id="agree"/> I authorize a soft inquiry for prequalification.</label></div>
-        <div class="rowb">
-          <div class="seg" role="group"><button id="rank-approval" aria-pressed="true">Most likely</button><button id="rank-fit" aria-pressed="false">Best fit</button></div>
-          <button class="btn" id="check">Check my cards</button>
-        </div>
-        <p class="status" id="status" role="status"></p>
-      </section>
-      <section><h2 class="rh-head">Browse by category <span class="i">i</span></h2><div class="chips" id="cat-chips"></div></section>
-      <section><h2 class="rh-head">Popular right now <span class="i">i</span></h2><div class="carousel" id="popular-row"></div></section>
-    </div>
+        <div class="rowb"><div class="seg"><button id="rank-approval" aria-pressed="true">Most likely</button><button id="rank-fit" aria-pressed="false">Best fit</button></div>
+          <button class="btn" id="check">Check my cards</button></div>
+        <p class="status" id="status"></p>
+      </div>
+      <p class="seclabel">Browse by category</p><div class="chips" id="chips"></div>
+    </section>
 
     <!-- MATCHES -->
-    <div id="v-matches" class="hidden">
-      <div class="crumb">PREQUALIFICATION — SOFT CHECK, NO SCORE IMPACT</div>
-      <h1 class="page-title">Your matches</h1>
-      <p class="page-sub" id="matches-sub"></p>
-      <div id="matches-body"></div>
-    </div>
+    <section class="view" id="v-matches">
+      <div class="head"><h1 class="title">Your matches</h1><div class="pills" id="m-pills"></div></div>
+      <p class="note">Prequalification · soft check, no score impact</p>
+      <div id="m-body"></div>
+    </section>
 
     <!-- EXPLORE -->
-    <div id="v-explore" class="hidden">
-      <div class="crumb">BROWSE EVERY CARD BRAVOX TRACKS</div>
-      <h1 class="page-title">Explore cards</h1>
-      <p class="page-sub">All cards across every tier — from starter to premium.</p>
+    <section class="view" id="v-explore">
+      <div class="head"><h1 class="title">Explore cards</h1></div>
+      <p class="note">All cards across every tier — from starter to premium.</p>
+      <div class="search"><span style="color:var(--faint)">⌕</span><input id="search" placeholder="Search cards or issuers…"/></div>
       <div id="explore"></div>
-    </div>
+    </section>
 
     <!-- DASHBOARD -->
-    <div id="v-dash" class="hidden">
-      <div class="dash-top"><div id="score-gauge"></div>
-        <div><h1 class="page-title" style="margin:0">Your credit snapshot</h1><p class="page-sub">The cards within reach, and how your numbers are trending.</p></div></div>
-      <div class="stats hidden" id="dash-stats"></div>
-      <div id="dash-chart"></div>
-      <div class="hidden" id="dash-nudges"><h2 class="section-head">Almost there — cards within reach</h2><div id="nudge-list"></div></div>
-      <div class="hidden" id="dash-history"><h2 class="section-head">Recent checks</h2><div id="hist-rows"></div></div>
-      <div class="empty hidden" id="dash-empty">Run your first check to start building your snapshot.<br><button class="btn" onclick="showView('check')">Run a check</button></div>
-    </div>
-  </div>
+    <section class="view" id="v-dash">
+      <div class="dtop"><div class="dscore" id="dscore"></div>
+        <div><h1 class="title">Your credit snapshot</h1><p class="note" style="margin:4px 0 0">The cards within reach, and how your numbers are trending.</p></div></div>
+      <div class="stats" id="d-stats" style="display:none"></div>
+      <div id="d-chart"></div>
+      <div id="d-nudges" style="display:none"><p class="seclabel">Almost there — cards within reach</p><div id="nudge-list"></div></div>
+      <div id="d-history" style="display:none"><p class="seclabel">Recent checks</p><div id="hist"></div></div>
+      <div class="empty" id="d-empty" style="display:none">Run your first check to start building your snapshot.<br><button class="btn" id="d-empty-btn">Run a check</button></div>
+    </section>
+    <section class="view legal" id="v-legal">
+      <div class="tabs2"><button data-l="privacy" class="on">Privacy Policy</button><button data-l="terms">Terms of Service</button><button data-l="disc">Disclosures</button></div>
+      <div id="legal-body"></div>
+    </section>
+  </main>
+  <footer class="footer">
+    <a data-foot="privacy">Privacy Policy</a><a data-foot="terms">Terms</a><a data-foot="disc">Affiliate Disclosure</a>
+    <span style="margin-left:auto">© 2026 Bravox</span>
+    <p class="disc">Estimates only — not a guarantee of approval or a credit decision. Approval odds are modeled from public underwriting patterns, not a real credit report. Bravox is not a lender, a credit reporting agency, or a financial advisor. Bravox may earn a commission when you are approved for a card through our links; this never affects your odds or how cards are ranked.</p>
+  </footer>
 
-  <p class="foot">Estimates only, not a guarantee of approval or a credit decision. Approval odds are modeled from public underwriting patterns, not a real credit report. Bravox is not a lender or a credit reporting agency.</p>
-
-  <div class="modal-bg" id="modal-bg"><div class="modal" role="dialog" aria-modal="true">
-    <h3 id="modal-title">Log in</h3><p class="sub" id="modal-sub"></p>
-    <label for="m-email">Email</label><input id="m-email" type="email" autocomplete="email"/>
-    <label for="m-pass">Password</label><input id="m-pass" type="password" autocomplete="current-password"/>
-    <p class="msg" id="modal-msg"></p>
-    <div class="r"><button class="linkbtn" id="modal-cancel">Cancel</button><button class="btn" id="modal-submit">Log in</button></div>
-    <p class="switch" id="modal-switch"></p></div></div>
+<div class="modal-bg" id="modal-bg"><div class="modal">
+  <h3 id="modal-title">Log in</h3><p class="sub" id="modal-sub"></p>
+  <label for="m-email">Email</label><input id="m-email" type="email" autocomplete="email"/>
+  <label for="m-pass">Password</label><input id="m-pass" type="password" autocomplete="current-password"/>
+  <p class="msg" id="modal-msg"></p>
+  <div class="r2"><button class="linkbtn" id="modal-cancel">Cancel</button><button class="btn" id="modal-submit">Log in</button></div>
+  <p class="consent-tag" id="modal-consent"></p>
+  <p class="switch" id="modal-switch"></p></div></div>
 
 <script>
   const API_BASE="";
   const $=(id)=>document.getElementById(id);
-  const st={mode:"manual",rankBy:"approval",lastContext:null,matches:[],lastProfile:null,user:null,view:"check",
-    exploreCards:null,dash:null,chartRange:"ALL",modalMode:"login"};
-  const consumerToken=(crypto.randomUUID&&crypto.randomUUID())||("sess-"+Date.now()+Math.random());
-
+  const st={mode:"manual",rankBy:"approval",ctx:null,matches:[],profile:null,user:null,view:"check",cards:null,dash:null,range:"ALL",modalMode:"login"};
+  const tok=(crypto.randomUUID&&crypto.randomUUID())||("s"+Date.now()+Math.random());
   function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
   async function postJSON(p,b){const r=await fetch(API_BASE+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
     const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.error||`Request failed (${r.status})`);return d;}
-  function col(p){return `hsl(${Math.max(0,Math.min(120,p*1.2))} 72% 52%)`;}
-  function tierCol(s){return s>=800?"hsl(140 70% 52%)":s>=740?"hsl(110 65% 52%)":s>=670?"hsl(82 72% 52%)":s>=580?"hsl(46 92% 56%)":"hsl(8 82% 56%)";}
+  function oc(p){return p>=85?"#43d98a":p>=70?"#8fd06a":p>=58?"#d7cf57":p>=48?"#eeb13e":"#ff6b6b";}
+  function ow(p){return p>=85?"Excellent odds":p>=70?"Strong odds":p>=58?"Good odds":p>=48?"Fair odds":"Long shot";}
+  function tierCol(s){return s>=800?"#43d98a":s>=740?"#8fd06a":s>=670?"#d7cf57":s>=580?"#eeb13e":"#ff6b6b";}
   function tierName(s){return s>=800?"Excellent":s>=740?"Very good":s>=670?"Good":s>=580?"Fair":"Poor";}
-  // Approval-likelihood word (highlighted in the UI; the % is shown as secondary).
-  // Deliberately no "guaranteed" — we can't promise an issuer's decision.
-  function oddsWord(p){ return p>=85?["Excellent odds",col(90)]:p>=70?["Strong odds",col(75)]
-    :p>=58?["Good odds",col(62)]:p>=48?["Fair odds",col(50)]:["Long shot",col(30)]; }
   function setStatus(m,e){const el=$("status");el.textContent=m||"";el.classList.toggle("error",!!e);}
 
-  function thumb(issuer,w,h){w=w||64;h=h||40;let n=0;for(const c of (issuer||""))n=(n*31+c.charCodeAt(0))%360;
-    return `<svg viewBox="0 0 ${w} ${h}"><defs><linearGradient id="g${n}x${w}" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="hsl(${n} 46% 42%)"/><stop offset="1" stop-color="hsl(${(n+26)%360} 50% 26%)"/></linearGradient></defs>
-      <rect width="${w}" height="${h}" fill="url(#g${n}x${w})"/><rect x="${(w*0.11).toFixed(0)}" y="${(h*0.22).toFixed(0)}" width="${(w*0.17).toFixed(0)}" height="${(h*0.2).toFixed(0)}" rx="1.5" fill="rgba(255,255,255,.5)"/>
-      <text x="${(w*0.11).toFixed(0)}" y="${(h*0.86).toFixed(0)}" fill="rgba(255,255,255,.9)" font-family="Inter" font-size="${(h*0.15).toFixed(1)}" font-weight="600">${esc((issuer||"Card").slice(0,15))}</text></svg>`;}
-  function cardArt(m,w,h){return m.image_url?`<img src="${esc(m.image_url)}" alt="${esc(m.card_name||m.name)}" loading="lazy"/>`:thumb(m.issuer,w,h);}
-  function ring(pct,size,color,opts){opts=opts||{};const sw=opts.sw||(size>90?9:6),r=size/2-sw,C=2*Math.PI*r,cx=size/2,cy=size/2,off=C*(1-pct/100);
-    const lab=opts.label!=null?opts.label:pct+"%";
-    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--panel-2)" stroke-width="${sw}"/>
-      <circle class="ring-fg" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color||col(pct)}" stroke-width="${sw}" stroke-linecap="round"
+  const SCH={chase:["#20409a","#0d1b3d"],amex:["#c7a349","#6a5119"],capone:["#2c3c55","#111a29"],citi:["#214262","#0d1b2a"],discover:["#d2742e","#5a2f12"],wells:["#9a2b2b","#3a1414"],bofa:["#b32430","#10213f"],bank:["#2d333c","#13171e"]};
+  function schemeFor(iss){const i=(iss||"").toLowerCase();
+    if(i.includes("chase"))return SCH.chase; if(i.includes("express")||i==="amex")return SCH.amex;
+    if(i.includes("capital one"))return SCH.capone; if(i.includes("citi"))return SCH.citi;
+    if(i.includes("discover"))return SCH.discover; if(i.includes("wells"))return SCH.wells;
+    if(i.includes("america")||i.includes("bofa"))return SCH.bofa; if(i.includes("bank"))return SCH.bank;
+    let n=0;for(const c of (iss||""))n=(n*31+c.charCodeAt(0))%360;return [`hsl(${n} 40% 38%)`,`hsl(${(n+20)%360} 45% 18%)`];}
+  function metal(w,h,sc,iss){const id=Math.random().toString(36).slice(2,7);const[c1,c2]=sc;
+    return `<svg class="art" width="${w}" height="${h}" viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg"><defs>
+      <linearGradient id="b${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
+      <linearGradient id="s${id}" x1="0" y1="0" x2="1" y2="1"><stop offset=".44" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".18"/><stop offset=".57" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <linearGradient id="c${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3d487"/><stop offset="1" stop-color="#b58e39"/></linearGradient></defs>
+      <rect width="300" height="190" rx="18" fill="url(#b${id})"/><rect width="300" height="190" rx="18" fill="url(#s${id})"/>
+      <rect x="26" y="70" width="42" height="33" rx="6" fill="url(#c${id})"/>
+      <path d="M76 74 a21 21 0 0 1 0 25 M84 70 a29 29 0 0 1 0 33" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.2"/>
+      <text x="26" y="40" fill="rgba(255,255,255,.95)" font-family="Inter,sans-serif" font-size="13" font-weight="600" letter-spacing=".4">${esc((iss||"CARD").toUpperCase().slice(0,16))}</text>
+      <text x="26" y="140" fill="rgba(255,255,255,.78)" font-family="Inter,sans-serif" font-size="14" letter-spacing="2.4">••••  ••••  ••••  7997</text>
+      <circle cx="248" cy="156" r="14" fill="rgba(235,80,70,.85)"/><circle cx="266" cy="156" r="14" fill="rgba(245,170,40,.8)"/></svg>`;}
+  function cardArt(m,w,h){return m.image_url?`<img class="art" src="${esc(m.image_url)}" alt="${esc(m.card_name||m.name||'')}" width="${w}" height="${h}" style="border-radius:14px;object-fit:cover" loading="lazy"/>`:metal(w,h,schemeFor(m.issuer),m.issuer);}
+  // the ONE ring — used only as a view's single hero odds element
+  function heroRing(pct,size,color){const sw=4,r=size/2-sw,C=2*Math.PI*r,cx=size/2,cy=size/2,off=C*(1-pct/100);
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="${sw}"/>
+      <circle class="ring-fg" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"
         stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${off.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>
-      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${(size*0.25).toFixed(0)}" fill="#fff" style="font-variant-numeric:tabular-nums">${esc(lab)}</text>
-      ${opts.sub?`<text x="${cx}" y="${(cy+size*0.2).toFixed(0)}" text-anchor="middle" font-family="Inter" font-size="${(size*0.1).toFixed(0)}" fill="var(--muted)">${esc(opts.sub)}</text>`:""}</svg>`;}
-  function animRings(root,stag){root.querySelectorAll(".ring-fg").forEach((e,i)=>requestAnimationFrame(()=>setTimeout(()=>{e.style.strokeDashoffset=e.dataset.off;},50+i*(stag||55))));}
+      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-family="Space Grotesk" font-weight="600" font-size="${size*0.26}" fill="#fff" style="font-variant-numeric:tabular-nums">${Math.round(pct)}</text></svg>`;}
+  function fillRings(root){root.querySelectorAll(".ring-fg").forEach(e=>requestAnimationFrame(()=>setTimeout(()=>e.style.strokeDashoffset=e.dataset.off,80)));}
 
-  // ---- nav / views ----
+  // ---- nav ----
+  function renderLogo(){ $("logo").innerHTML=`<img src="/assets/bravox-logo.png" alt="bravox" onerror="this.outerHTML='<span class=&quot;txt&quot;>bravo<span class=&quot;x&quot;>x</span></span>'"/>`; $("logo").onclick=()=>showView("check"); }
   function renderNav(){
-    const tabs=[["check","Check"],["matches","Matches"],["explore","Explore"]];
-    if(st.user) tabs.push(["dash","Dashboard"]);
-    $("tabs").innerHTML=tabs.map(([k,l])=>`<button data-v="${k}" class="${st.view===k?'on':''}">${l}</button>`).join("");
-    $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
-    const a=$("authbar");
-    if(st.user){
-      a.innerHTML=`<button class="acctbtn" id="acctbtn">Account ▾</button>`;
-      $("acctbtn").onclick=(e)=>{e.stopPropagation();$("acctmenu").classList.toggle("open");};
-      $("acctmenu").innerHTML=`<div class="who">${esc(st.user.email)}</div>
-        <button data-go="dash"><span class="ic">◧</span> Dashboard</button>
-        <button data-go="matches"><span class="ic">✦</span> My matches</button>
-        <button data-go="explore"><span class="ic">▦</span> Explore cards</button>
-        <button id="acct-logout"><span class="ic">⇥</span> Log out</button>`;
-      $("acctmenu").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{closeAcct();showView(b.dataset.go);});
-      $("acct-logout").onclick=()=>{closeAcct();logout();};
-    } else {
-      a.innerHTML=`<button class="linkbtn" id="li">Log in</button><button class="btn" id="su">Sign up</button>`;
-      $("li").onclick=()=>openModal("login"); $("su").onclick=()=>openModal("signup");
-      $("acctmenu").classList.remove("open"); $("acctmenu").innerHTML="";
-    }
+    const items=[["check","Check"],["matches","Matches"],["explore","Explore"]]; if(st.user)items.push(["dash","Dashboard"]);
+    $("nav").innerHTML=items.map(([k,l])=>`<button data-v="${k}" class="${st.view===k?'on':''}">${l}</button>`).join("");
+    $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
+    const f=$("authbar");
+    if(st.user) f.innerHTML=`<span class="em">${esc(st.user.email)}</span><button class="lk" id="lo">Log out</button>`,$("lo").onclick=logout;
+    else f.innerHTML=`<button class="lk" id="li">Log in</button><button class="btn" id="su">Sign up</button>`,$("li").onclick=()=>openModal("login"),$("su").onclick=()=>openModal("signup");
   }
-  function closeAcct(){ const m=$("acctmenu"); if(m) m.classList.remove("open"); }
-  document.addEventListener("click",closeAcct);
-  function showView(v){ st.view=v; ["check","matches","explore","dash"].forEach(k=>$("v-"+k).classList.toggle("hidden",k!==v));
-    renderNav(); if(v==="explore")loadExplore(); if(v==="dash")loadDashboard(); if(v==="matches")renderMatches();
+  function showView(v){ st.view=v; ["check","matches","explore","dash","legal"].forEach(k=>{const el=$("v-"+k);el.classList.toggle("show",k===v);});
+    renderNav(); if(v==="matches")renderMatches(); if(v==="explore")loadExplore(); if(v==="dash")loadDashboard();
     window.scrollTo({top:0,behavior:"smooth"}); }
-  $("mark").onclick=()=>showView("check");
 
-  // ---- check inputs ----
+  // ---- check ----
   function setMode(n){st.mode=n;$("mode-manual").setAttribute("aria-pressed",n==="manual");$("mode-pull").setAttribute("aria-pressed",n==="pull");
-    $("manual-fields").classList.toggle("hidden",n!=="manual");$("consent-box").classList.toggle("hidden",n!=="pull");}
+    $("manual-fields").style.display=n==="manual"?"grid":"none";$("consent-box").style.display=n==="pull"?"block":"none";}
   function setRank(n){st.rankBy=n;$("rank-approval").setAttribute("aria-pressed",n==="approval");$("rank-fit").setAttribute("aria-pressed",n==="fit");}
   $("mode-manual").onclick=()=>setMode("manual");$("mode-pull").onclick=()=>setMode("pull");
   $("rank-approval").onclick=()=>setRank("approval");$("rank-fit").onclick=()=>setRank("fit");
-
-  async function check(){
-    const btn=$("check");btn.disabled=true;setStatus("Checking…",false);
-    try{
-      if(st.mode==="manual"){const body={score:Number($("score").value),utilization:Number($("util").value),inquiries:Number($("inq").value)};
-        const na=$("newacct").value;if(na!=="")body.new_accounts_24mo=Number(na);
-        st.matches=await postJSON(`/v1/match?rank_by=${st.rankBy}&include_ineligible=true`,body);
-        st.lastContext={...body,report_id:null};st.lastProfile={...body};
+  async function check(){const btn=$("check");btn.disabled=true;setStatus("Checking…",false);
+    try{ if(st.mode==="manual"){const body={score:+$("score").value,utilization:+$("util").value,inquiries:+$("inq").value};
+        const na=$("newacct").value;if(na!=="")body.new_accounts_24mo=+na;
+        st.matches=await postJSON(`/v1/match?rank_by=${st.rankBy}&include_ineligible=true`,body);st.ctx={...body,report_id:null};st.profile={...body};
       } else { if(!$("agree").checked){setStatus("Please authorize the soft inquiry to continue.",true);btn.disabled=false;return;}
-        const consent=await postJSON("/v1/consent",{consumer_token:consumerToken,agreed:true});
-        const out=await postJSON("/v1/match-from-report",{consent_id:consent.consent_id,consumer_token:consumerToken,rank_by:st.rankBy,include_ineligible:true});
-        st.matches=out.matches;st.lastContext={report_id:out.report.report_id};st.lastProfile=null; }
-      setStatus("",false); showView("matches");
-    }catch(e){setStatus(e.message,true);} finally{btn.disabled=false;}
-  }
+        const c=await postJSON("/v1/consent",{consumer_token:tok,agreed:true});
+        const o=await postJSON("/v1/match-from-report",{consent_id:c.consent_id,consumer_token:tok,rank_by:st.rankBy,include_ineligible:true});
+        st.matches=o.matches;st.ctx={report_id:o.report.report_id};st.profile=null; }
+      setStatus("",false);showView("matches");
+    }catch(e){setStatus(e.message,true);}finally{btn.disabled=false;}}
   $("check").onclick=check;
 
-  // ---- matches render ----
-  function cells(m){const f=m.features||{};const fee=m.annual_fee?("$"+m.annual_fee):"None";
-    const bonus=(f.signup_bonus&&f.signup_bonus!=="None")?f.signup_bonus:"—";
-    const apr=(f.intro_apr&&!/^(none|see issuer)/i.test(f.intro_apr))?f.intro_apr:"—";
-    return `<div class="feat-cells"><div><div class="fk">Annual fee</div><div class="fv">${esc(fee)}</div></div>
-      <div><div class="fk">Welcome bonus</div><div class="fv">${esc(bonus)}</div></div>
-      <div><div class="fk">Rewards</div><div class="fv">${esc((f.rewards||"—").slice(0,38))}</div></div>
-      <div><div class="fk">Intro APR</div><div class="fv">${esc(apr)}</div></div></div>`;}
-  function renderMatches(){
-    const sub=$("matches-sub"),body=$("matches-body");
-    if(!st.matches.length){ sub.textContent="";
-      body.innerHTML=`<div class="empty" style="margin-top:24px">Run a check to see your personalized matches.<br><button class="btn" onclick="showView('check')">Run a check</button></div>`; return; }
-    const elig=st.matches.filter(m=>m.eligible), inelig=st.matches.filter(m=>!m.eligible);
-    if(st.lastProfile) sub.innerHTML=`Based on score <b>${st.lastProfile.score}</b> · ${st.lastProfile.utilization}% utilization · ${st.lastProfile.inquiries} hard ${st.lastProfile.inquiries===1?'inquiry':'inquiries'}`;
-    else sub.textContent="Based on your simulated credit report.";
-    if(!elig.length){ body.innerHTML=`<div class="empty" style="margin-top:24px">Nothing cleared the filters yet. Lowering utilization or inquiries usually opens the most doors.</div>`; return; }
-    const top=elig[0], rest=elig.slice(1);
-    const topVal=st.rankBy==="fit"?top.fit_score:top.approval_probability;
-    const f=top.features||{};
-    const featured=`<div class="featured"><span class="feat-tag">YOUR TOP MATCH</span>
-      <div class="feat-body"><div class="feat-art">${cardArt(top,158,100)}</div>
-        <div><div class="feat-name">${esc(top.card_name)}</div>
-          <div class="feat-rw">${esc(f.rewards||f.highlight||top.match_label)}</div></div>
-        <div class="feat-gauge">${ring(Math.round(top.approval_probability),110,col(top.approval_probability))}
-          <div class="feat-word disp" style="color:${oddsWord(top.approval_probability)[1]}">${oddsWord(top.approval_probability)[0]}</div>
-          <div class="cap">chance of approval · ${Math.round(top.approval_probability)}% estimated</div></div></div>
-      ${cells(top)}
-      ${f.highlight?`<p class="feat-rw" style="margin-top:16px">${esc(f.highlight)}</p>`:""}
-      <div class="feat-actions"><button class="btn" data-apply="${top.card_id}">Apply ▸</button>
-        <div class="fb" data-card="${top.card_id}" data-pct="${top.approval_probability}"><span>Applied?</span>
-          <button data-outcome="approved">Approved</button><button data-outcome="denied">Denied</button></div></div>
-      ${f.last_updated?`<p class="feat-stamp">Features as of ${esc(f.last_updated)} — verify current terms with the issuer.</p>`:""}</div>`;
-
-    const rows=rest.map(m=>{const v=st.rankBy==="fit"?m.fit_score:m.approval_probability;
-      return `<div class="row"><div class="thumb">${cardArt(m)}</div>
-        <div><div class="rname">${esc(m.card_name)}</div><div class="rrw">${esc((m.features&&m.features.rewards)||m.match_label)}</div></div>
-        <div class="odds">${st.rankBy==="fit"
-          ? `<div class="v num" style="color:${col(m.approval_probability)}">${v.toFixed(0)}</div><div class="l">fit score</div>`
-          : `<div class="v" style="color:${oddsWord(m.approval_probability)[1]};font-size:14px">${oddsWord(m.approval_probability)[0].replace(' odds','')}</div><div class="l num">${v.toFixed(0)}% odds</div>`}</div>
-        <button class="mini" data-apply="${m.card_id}">Apply ▸</button></div>`;}).join("");
-
-    const scoreRail = st.lastProfile ? `<div class="rail"><p class="rail-k">Your credit</p>
-      <div class="scoremini">${ring(Math.round((st.lastProfile.score-300)/550*100),76,tierCol(st.lastProfile.score),{label:String(st.lastProfile.score),fs:16})}
-        <div><div class="st">${tierName(st.lastProfile.score)} tier</div><div class="st">${st.lastProfile.utilization}% utilization · ${st.lastProfile.inquiries} inquiries</div></div></div></div>` : "";
-    const watchRail = inelig.length ? `<div class="rail"><p class="rail-k">Cards to watch — almost there</p>
-      ${inelig.slice(0,4).map(m=>`<div class="watch"><div class="thumb">${cardArt(m,48,30)}</div>
-        <div><div class="wname">${esc(m.card_name)}</div><div class="whint">${esc((m.reasons&&m.reasons[0])||"Not yet eligible")}</div></div></div>`).join("")}</div>` : "";
-
-    body.innerHTML=`<div class="shell"><div>${featured}
-      ${rest.length?`<div class="list-head"><h2>More matches</h2>
-        <div class="seg"><button ${st.rankBy==='approval'?'aria-pressed="true"':''} data-r="approval">Most likely</button><button ${st.rankBy==='fit'?'aria-pressed="true"':''} data-r="fit">Best fit</button></div></div>
-        <div class="list">${rows}</div>`:""}</div>
-      <aside>${scoreRail}${watchRail}</aside></div>`;
-
+  // ---- matches ----
+  function specLine(m){const f=m.features||{};const bits=[m.annual_fee?("$"+m.annual_fee+" fee"):"No annual fee"];
+    if(f.signup_bonus&&f.signup_bonus!=="None"&&!/see issuer/i.test(f.signup_bonus))bits.push(f.signup_bonus);
+    bits.push(m.category.replace("_"," "));return bits.join(" · ");}
+  function featuredHTML(t,lede){const f=t.features||{};
+    return `<div class="top"><div>${cardArt(t,300,190)}</div>
+      <div>${lede?`<div class="lede">${lede}</div>`:""}<div class="tname">${esc(t.card_name)}</div>
+        <p class="tdesc">${esc(f.highlight||f.rewards||t.match_label)}</p>
+        <div class="oddsflex">${heroRing(t.approval_probability,80,oc(t.approval_probability))}
+          <div><div class="w" style="color:${oc(t.approval_probability)}">${ow(t.approval_probability)}</div><div class="m">chance of approval · ${Math.round(t.approval_probability)}% estimated</div></div></div>
+        <div class="specs"><div><div class="k">Annual fee</div><div class="v">${t.annual_fee?"$"+t.annual_fee:"None"}</div></div>
+          <div><div class="k">Welcome</div><div class="v">${esc(f.signup_bonus&&f.signup_bonus!=="None"?f.signup_bonus:"—")}</div></div>
+          <div><div class="k">Rewards</div><div class="v">${esc((f.rewards||"—").slice(0,30))}</div></div></div>
+        <div class="tactions"><button class="btn" data-apply="${t.card_id}">Apply →</button>
+          <div class="fb" data-card="${t.card_id}" data-pct="${t.approval_probability}"><span>Applied?</span><button data-outcome="approved">Approved</button><button data-outcome="denied">Denied</button></div></div>
+        ${f.last_updated?`<p class="stamp">Features as of ${esc(f.last_updated)} — verify current terms with the issuer.</p>`:""}</div></div>`;}
+  function wireActions(c){if(!c)return;c.querySelectorAll("[data-apply]").forEach(b=>b.onclick=(e)=>{e.stopPropagation();openApply(b.dataset.apply);});
+    c.querySelectorAll(".fb").forEach(fb=>fb.querySelectorAll("button").forEach(b=>b.onclick=(e)=>{e.stopPropagation();sendFeedback(fb,b.dataset.outcome);}));fillRings(c);}
+  function toggleRow(row){const det=row.nextElementSibling,id=row.dataset.id,open=row.classList.contains("open");
+    document.querySelectorAll(".r.exp.open").forEach(r=>{r.classList.remove("open");if(r.nextElementSibling)r.nextElementSibling.classList.remove("open");});
+    if(!open){const m=st.matches.find(x=>x.card_id===id);det.innerHTML=featuredHTML(m,"");row.classList.add("open");det.classList.add("open");wireActions(det);}}
+  function renderMatches(){const body=$("m-body"),pills=$("m-pills");
+    if(!st.matches.length){body.innerHTML=`<div class="empty">Run a check to see your matches.<br><button class="btn" onclick="showView('check')">Run a check</button></div>`;return;}
+    if(!st.user){pills.innerHTML="";const elig=st.matches.filter(m=>m.eligible).length;
+      body.innerHTML=`<div class="gate"><div class="gate-ic">✦</div>
+        <h2>Your matches are ready</h2>
+        <p>You cleared <b>${elig}</b> of 27 cards. Create a free account to reveal which cards say yes — and your approval odds for each.</p>
+        <button class="btn" id="gate-su">Get your results →</button>
+        <p class="gate-login">Already have an account? <button class="linkbtn" id="gate-li">Log in</button></p></div>`;
+      $("gate-su").onclick=()=>openModal("signup");$("gate-li").onclick=()=>openModal("login");return;}
+    const el=st.matches.filter(m=>m.eligible),inel=st.matches.filter(m=>!m.eligible);
+    pills.innerHTML = st.profile?`<span class="pill">Score <b>${st.profile.score}</b></span><span class="pill">Util <b>${st.profile.utilization}%</b></span><span class="pill">Inq <b>${st.profile.inquiries}</b></span>`:`<span class="pill">Simulated report</span>`;
+    if(!el.length){body.innerHTML=`<div class="empty">Nothing cleared the filters yet. Lowering utilization or inquiries usually opens the most doors.</div>`;return;}
+    const t=el[0],rest=el.slice(1);
+    const AFF=`<p class="affdisc">Bravox may earn a commission if you are approved through an Apply link. It never changes your odds or ranking.</p>`;
+    const rows=rest.map(m=>{const v=st.rankBy==="fit"?m.fit_score.toFixed(0):Math.round(m.approval_probability);
+      return `<div class="r exp" data-id="${m.card_id}">${cardArt(m,120,76)}
+        <div><div class="rn">${esc(m.card_name)}</div><div class="rd">${esc((m.features&&m.features.rewards)||specLine(m))}</div></div>
+        <div class="ro"><div class="w" style="color:${oc(m.approval_probability)}">${st.rankBy==="fit"?v+" fit":ow(m.approval_probability)}</div><div class="p">${st.rankBy==="fit"?"":Math.round(m.approval_probability)+"% est."}</div></div>
+        <span class="chev">›</span></div><div class="detail" id="det-${m.card_id}"></div>`;}).join("");
+    body.innerHTML=AFF+featuredHTML(t,"Your top match")+`<div class="head" style="margin:34px 0 4px"><p class="seclabel" style="margin:0">More matches — tap any card to expand</p>
+      <div class="seg"><button ${st.rankBy==='approval'?'aria-pressed="true"':''} data-r="approval">Most likely</button><button ${st.rankBy==='fit'?'aria-pressed="true"':''} data-r="fit">Best fit</button></div></div>
+      <div class="rows stagger">${rows}</div>
+      ${inel.length?`<p class="seclabel">Cards to watch — almost there</p><div class="rows">${inel.slice(0,4).map(m=>`<div class="r">${cardArt(m,120,76)}<div><div class="rn">${esc(m.card_name)}</div><div class="rd" style="color:var(--accent-bright)">${esc((m.reasons&&m.reasons[0])||"Not yet eligible")}</div></div><div></div></div>`).join("")}</div>`:""}`;
     body.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{setRank(b.dataset.r);renderMatches();});
-    body.querySelectorAll(".fb").forEach(fb=>fb.querySelectorAll("button").forEach(b=>b.onclick=()=>sendFeedback(fb,b.dataset.outcome)));
-    body.querySelectorAll("[data-apply]").forEach(b=>b.onclick=()=>openApply(b.dataset.apply,b));
-    animRings(body,55);
+    body.querySelectorAll(".r.exp").forEach(r=>r.onclick=()=>toggleRow(r));
+    wireActions(body.querySelector(".top"));
+    const rowsEl=body.querySelector(".rows.stagger"); if(rowsEl)rowsEl.querySelectorAll(".r").forEach((c,i)=>c.style.animationDelay=(i*45)+"ms");
   }
-  // Apply = affiliate referral slot. When a card's features.affiliate_url is set
-  // (populated in engine.py CARD_FEATURES once you join an affiliate program),
-  // this opens it in a new tab. Until then it's gracefully inert.
-  function openApply(cardId,btn){
-    const m=st.matches.find(x=>x.card_id===cardId);
-    const url=m&&m.features&&m.features.affiliate_url;
-    if(url){ window.open(url,"_blank","noopener,noreferrer"); }
-    else { const t=btn.textContent; btn.textContent="Coming soon"; setTimeout(()=>btn.textContent=t,1100); }
-  }
+  function openApply(id){const m=st.matches.find(x=>x.card_id===id);const u=m&&m.features&&m.features.affiliate_url;if(u)window.open(u,"_blank","noopener,noreferrer");}
+  async function sendFeedback(fb,outcome){const body={consumer_token:tok,card_id:fb.dataset.card,outcome,approval_probability_shown:+fb.dataset.pct};
+    if(st.ctx){if(st.ctx.report_id)body.report_id=st.ctx.report_id;if(st.ctx.score!=null){body.score=st.ctx.score;body.utilization=st.ctx.utilization;body.inquiries=st.ctx.inquiries;if(st.ctx.new_accounts_24mo!=null)body.new_accounts_24mo=st.ctx.new_accounts_24mo;}}
+    try{await postJSON("/v1/feedback",body);fb.innerHTML=`<span class="done">Thanks — that sharpens the estimates.</span>`;}catch(e){fb.innerHTML=`<span>Couldn't save that.</span>`;}}
 
-  async function sendFeedback(fbEl,outcome){
-    const body={consumer_token:consumerToken,card_id:fbEl.dataset.card,outcome,approval_probability_shown:Number(fbEl.dataset.pct)};
-    if(st.lastContext){if(st.lastContext.report_id)body.report_id=st.lastContext.report_id;
-      if(st.lastContext.score!=null){body.score=st.lastContext.score;body.utilization=st.lastContext.utilization;body.inquiries=st.lastContext.inquiries;
-        if(st.lastContext.new_accounts_24mo!=null)body.new_accounts_24mo=st.lastContext.new_accounts_24mo;}}
-    try{await postJSON("/v1/feedback",body);fbEl.innerHTML=`<span class="done">Thanks — that sharpens the estimates.</span>`;}
-    catch(e){fbEl.innerHTML=`<span>Couldn't save that.</span>`;}
-  }
-
-  // ---- explore ----
-  async function loadExplore(){ if(!st.exploreCards){ try{const r=await fetch(API_BASE+"/v1/cards");st.exploreCards=await r.json();}catch(e){st.exploreCards=[];} } renderExplore(); }
-  function renderExplore(){
-    const q=($("search").value||"").toLowerCase().trim();
-    const labels={starter:"Starter & secured",student:"Student",cash_back:"Cash back",travel:"Travel & premium"};
-    const order=["starter","student","cash_back","travel"];
-    let cards=st.exploreCards||[];
-    if(q) cards=cards.filter(c=>(c.name+" "+c.issuer).toLowerCase().includes(q));
-    const groups={}; cards.forEach(c=>{(groups[c.category]=groups[c.category]||[]).push(c);});
-    const html=order.filter(cat=>groups[cat]).map(cat=>{
-      const rows=groups[cat].map(c=>{const f=c.features||{};
-        return `<div class="row"><div class="thumb">${cardArt({issuer:c.issuer,image_url:c.image_url,card_name:c.name})}</div>
-          <div><div class="rname">${esc(c.name)}</div><div class="rrw">${esc(f.rewards||"")}</div></div>
-          <div class="odds"><div class="v" style="font-size:13px;color:var(--muted)">${c.annual_fee?"$"+c.annual_fee:"No fee"}</div></div>
-          <button class="mini" onclick="showView('check')">Check odds</button></div>`;}).join("");
-      return `<div class="cat"><h3>${labels[cat]||cat}</h3><p class="sub">${groups[cat].length} cards</p><div class="list">${rows}</div></div>`;
-    }).join("");
-    $("explore").innerHTML=html||`<div class="empty" style="margin-top:24px">No cards match “${esc(q)}”.</div>`;
-  }
-  $("search").addEventListener("input",()=>{ if(st.view!=="explore")showView("explore"); else renderExplore(); });
+  // ---- explore + chips ----
+  const CAT={starter:["Starter & secured","#3b82f6"],student:["Student","#22c55e"],cash_back:["Cash back","#f0a93b"],travel:["Travel & premium","#a855f7"]};
+  async function ensureCards(){if(!st.cards){try{const r=await fetch(API_BASE+"/v1/cards");st.cards=await r.json();}catch(e){st.cards=[];}}}
+  async function renderChips(){await ensureCards();$("chips").innerHTML=Object.entries(CAT).map(([k,[l,c]])=>`<div class="chip" data-cat="${k}"><span class="dot" style="background:${c}"></span>${l}</div>`).join("");
+    $("chips").querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{$("search").value="";showView("explore");});}
+  async function loadExplore(){await ensureCards();renderExplore();}
+  function renderExplore(){const q=($("search").value||"").toLowerCase().trim();const order=["starter","student","cash_back","travel"];
+    let cards=st.cards||[];if(q)cards=cards.filter(c=>(c.name+" "+c.issuer).toLowerCase().includes(q));
+    const g={};cards.forEach(c=>{(g[c.category]=g[c.category]||[]).push(c);});
+    $("explore").innerHTML=order.filter(k=>g[k]).map(k=>`<div class="cat"><h3>${CAT[k][0]}</h3><p class="sub">${g[k].length} cards</p>
+      <div class="rows">${g[k].map(c=>`<div class="r"><div>${cardArt({issuer:c.issuer,image_url:c.image_url,card_name:c.name},120,76)}</div>
+        <div><div class="rn">${esc(c.name)}</div><div class="rd">${esc((c.features&&c.features.rewards)||"")}</div></div>
+        <div class="ro"><div class="w" style="color:var(--muted);font-weight:500">${c.annual_fee?"$"+c.annual_fee:"No fee"}</div></div></div>`).join("")}</div></div>`).join("")||`<div class="empty">No cards match “${esc(q)}”.</div>`;}
+  $("search").addEventListener("input",()=>{if(st.view!=="explore")showView("explore");else renderExplore();});
 
   // ---- auth ----
   function openModal(m){st.modalMode=m;$("modal-title").textContent=m==="signup"?"Create your account":"Log in";
     $("modal-sub").textContent=m==="signup"?"Save your checks and unlock your dashboard.":"Welcome back.";
     $("modal-submit").textContent=m==="signup"?"Sign up":"Log in";
     $("modal-switch").innerHTML=m==="signup"?`Already have an account? <button class="linkbtn" id="m-switch">Log in</button>`:`New here? <button class="linkbtn" id="m-switch">Create an account</button>`;
-    $("m-switch").onclick=()=>openModal(m==="signup"?"login":"signup");$("modal-msg").textContent="";$("modal-bg").classList.add("open");$("m-email").focus();}
+    $("m-switch").onclick=()=>openModal(m==="signup"?"login":"signup");$("modal-consent").innerHTML=m==="signup"?"By creating an account you agree to receive automated emails from Bravox — card tips, updates, and your results. You can unsubscribe anytime. <a id=\"consent-priv\" style=\"color:var(--accent-bright);cursor:pointer\">Privacy Policy</a>.":"";if($("consent-priv"))$("consent-priv").onclick=()=>{closeModal();showView("legal");setLegal("privacy");};$("modal-msg").textContent="";$("modal-bg").classList.add("open");$("m-email").focus();}
   function closeModal(){$("modal-bg").classList.remove("open");}
-  async function submitAuth(){const email=$("m-email").value.trim(),password=$("m-pass").value;
-    const path=st.modalMode==="signup"?"/v1/auth/register":"/v1/auth/login";$("modal-submit").disabled=true;
-    try{st.user=await postJSON(path,{email,password});closeModal();$("m-pass").value="";renderNav();showView("dash");}
-    catch(e){$("modal-msg").textContent=e.message;}finally{$("modal-submit").disabled=false;}}
+  async function submitAuth(){const email=$("m-email").value.trim(),password=$("m-pass").value;const path=st.modalMode==="signup"?"/v1/auth/register":"/v1/auth/login";$("modal-submit").disabled=true;
+    try{st.user=await postJSON(path,{email,password});closeModal();$("m-pass").value="";renderNav();showView(st.matches.length?"matches":"dash");}catch(e){$("modal-msg").textContent=e.message;}finally{$("modal-submit").disabled=false;}}
   async function logout(){try{await postJSON("/v1/auth/logout",{});}catch(e){}st.user=null;renderNav();showView("check");}
-  $("modal-submit").onclick=submitAuth;$("modal-cancel").onclick=closeModal;
-  $("modal-bg").onclick=(e)=>{if(e.target===$("modal-bg"))closeModal();};
+  $("modal-submit").onclick=submitAuth;$("modal-cancel").onclick=closeModal;$("modal-bg").onclick=(e)=>{if(e.target===$("modal-bg"))closeModal();};
   $("m-pass").addEventListener("keydown",(e)=>{if(e.key==="Enter")submitAuth();});
 
   // ---- dashboard ----
-  async function loadDashboard(){try{const r=await fetch(API_BASE+"/v1/dashboard");if(!r.ok)return;st.dash=await r.json();st.chartRange="ALL";renderDash();}catch(e){}}
+  async function loadDashboard(){try{const r=await fetch(API_BASE+"/v1/dashboard");if(!r.ok)return;st.dash=await r.json();st.range="ALL";renderDash();}catch(e){}}
   function renderDash(){const d=st.dash;if(!d)return;const latest=d.latest,empty=d.checks_run===0;
-    $("dash-empty").classList.toggle("hidden",!empty);$("dash-stats").classList.toggle("hidden",empty);
-    $("dash-nudges").classList.toggle("hidden",empty||!d.near_misses.length);$("dash-history").classList.toggle("hidden",empty);
-    const sg=$("score-gauge");
+    $("d-stats").style.display=empty?"none":"grid";$("d-nudges").style.display=(empty||!d.near_misses.length)?"none":"block";
+    $("d-history").style.display=empty?"none":"block";$("d-empty").style.display=empty?"block":"none";
+    const sg=$("dscore");
     if(empty||!latest||latest.score==null)sg.innerHTML="";
-    else{const s=latest.score;const tr=d.trend||[];let dz="";if(tr.length>=2&&tr[tr.length-1].score!=null&&tr[tr.length-2].score!=null){const dv=tr[tr.length-1].score-tr[tr.length-2].score;const pos=dv>=0;dz=dv===0?`<div class="delta flat">No change since last check</div>`:`<div class="delta" style="color:${pos?'#36d07a':'#ff6b6b'}">${pos?'\u25B2':'\u25BC'} ${Math.abs(dv)} pts since last check</div>`;}sg.innerHTML=`<div style="text-align:center">`+ring(Math.round((s-300)/550*100),160,tierCol(s),{label:String(s),fs:44,sub:tierName(s),sw:11})+dz+`</div>`;animRings(sg,0);}
-    if(empty){$("dash-chart").innerHTML="";return;}
-    $("dash-stats").innerHTML=`<div class="stat"><div class="k">Checks run</div><div class="v num">${d.checks_run}</div></div>
-      <div class="stat"><div class="k">Latest utilization</div><div class="v num">${latest&&latest.utilization!=null?latest.utilization.toFixed(0)+"<small>%</small>":"—"}</div></div>
-      <div class="stat"><div class="k">Top match</div><div class="v" style="font-size:19px;font-family:Inter;font-weight:700">${latest&&latest.top_card_name?esc(latest.top_card_name):"—"}</div></div>`;
+    else{const s=latest.score,tr=d.trend||[];let dz="";
+      if(tr.length>=2&&tr[tr.length-1].score!=null&&tr[tr.length-2].score!=null){const dv=tr[tr.length-1].score-tr[tr.length-2].score;const pos=dv>=0;
+        dz=dv===0?`<div class="delta flat">No change</div>`:`<div class="delta" style="color:${pos?'#43d98a':'#ff6b6b'}">${pos?'▲':'▼'} ${Math.abs(dv)} pts</div>`;}
+      sg.innerHTML=heroRing((s-300)/550*100,150,tierCol(s)).replace(/>(\d+)<\/text>/,`>${s}</text>`)+`<div style="font-size:12px;color:var(--muted);margin-top:4px">${tierName(s)} tier</div>`+dz;fillRings(sg);}
+    if(empty){$("d-chart").innerHTML="";return;}
+    $("d-stats").innerHTML=`<div class="stat"><div class="k">Checks run</div><div class="v">${d.checks_run}</div></div>
+      <div class="stat"><div class="k">Latest utilization</div><div class="v">${latest&&latest.utilization!=null?latest.utilization.toFixed(0)+"<small>%</small>":"—"}</div></div>
+      <div class="stat"><div class="k">Top match</div><div class="v" style="font-size:18px;font-family:Inter;font-weight:600">${latest&&latest.top_card_name?esc(latest.top_card_name):"—"}</div></div>`;
     renderChart();
-    $("nudge-list").innerHTML=d.near_misses.map(c=>`<div class="nudge"><div class="thumb">${cardArt({issuer:c.issuer,image_url:c.image_url,card_name:c.card_name})}</div>
-      <div><div class="n-name">${esc(c.card_name)}</div><div class="n-hint">${esc(c.hints[0])}</div></div></div>`).join("");
-    $("hist-rows").innerHTML=d.history.map(r=>{const when=new Date(r.created_at).toLocaleString();
-      const top=r.top_card_name?`${esc(r.top_card_name)} · ${r.top_probability?r.top_probability.toFixed(0)+"%":""}`:"no eligible cards";
-      return `<div class="hist-row"><div>Score ${r.score??"—"} · ${r.utilization!=null?r.utilization.toFixed(0):"—"}% util · ${r.inquiries??"—"} inq<div class="when">${when} — ${r.result_count??0} matches</div></div><div style="text-align:right">${top}</div></div>`;}).join("");
+    $("nudge-list").innerHTML=d.near_misses.map(c=>`<div class="nudge">${cardArt({issuer:c.issuer,image_url:c.image_url,card_name:c.card_name},96,61)}<div><div class="n-name">${esc(c.card_name)}</div><div class="n-hint">${esc(c.hints[0])}</div></div></div>`).join("");
+    $("hist").innerHTML=d.history.map(r=>{const w=new Date(r.created_at).toLocaleString();const tp=r.top_card_name?`${esc(r.top_card_name)} · ${r.top_probability?r.top_probability.toFixed(0)+"%":""}`:"no eligible cards";
+      return `<div class="hrow"><div>Score ${r.score??"—"} · ${r.utilization!=null?r.utilization.toFixed(0):"—"}% util · ${r.inquiries??"—"} inq<div class="when">${w} — ${r.result_count??0} matches</div></div><div style="text-align:right">${tp}</div></div>`;}).join("");
   }
-  function fTrend(){const t=(st.dash.trend)||[];if(st.chartRange==="ALL")return t;const days=st.chartRange==="1M"?31:93,cut=Date.now()-days*864e5;
-    const f=t.filter(p=>new Date(p.date).getTime()>=cut);return f.length>=1?f:t;}
-  function renderChart(){const t=fTrend(),w=$("dash-chart");
-    if(t.length<2){w.innerHTML=`<div class="chart-wrap"><p class="empty" style="border:0;padding:0;background:none">Run a few checks over time to see your score trend here.</p></div>`;return;}
-    w.innerHTML=`<div class="chart-wrap"><div class="chart-tabs">${["1M","3M","ALL"].map(x=>`<button data-range="${x}" aria-pressed="${x===st.chartRange}">${x}</button>`).join("")}</div>
-      ${trendChart(t)}<div class="legend"><span><i style="background:var(--accent)"></i>Score</span><span><i style="background:var(--warn)"></i>Utilization %</span></div></div>`;
-    w.querySelectorAll(".chart-tabs button").forEach(b=>b.onclick=()=>{st.chartRange=b.dataset.range;renderChart();});}
-  function trendChart(points){const W=820,H=210,P=32;
-    const xs=(i)=>P+(W-2*P)*(points.length===1?0.5:i/(points.length-1));
-    const sY=(v)=>H-P-(H-2*P)*((Math.max(300,Math.min(850,v))-300)/550);
-    const uY=(v)=>H-P-(H-2*P)*(Math.max(0,Math.min(100,v))/100);
+  $("d-empty-btn").onclick=()=>showView("check");
+  function fTrend(){const t=(st.dash.trend)||[];if(st.range==="ALL")return t;const days=st.range==="1M"?31:93,cut=Date.now()-days*864e5;const f=t.filter(p=>new Date(p.date).getTime()>=cut);return f.length>=1?f:t;}
+  function renderChart(){const t=fTrend(),w=$("d-chart");
+    if(t.length<2){w.innerHTML=`<div class="chartwrap"><p class="empty" style="border:0;padding:0;background:none">Run a few checks over time to see your score trend here.</p></div>`;return;}
+    w.innerHTML=`<div class="chartwrap"><div class="ctabs">${["1M","3M","ALL"].map(x=>`<button data-range="${x}" aria-pressed="${x===st.range}">${x}</button>`).join("")}</div>${trend(t)}
+      <div class="legend"><span><i style="background:var(--accent)"></i>Score</span><span><i style="background:#f0a93b"></i>Utilization %</span></div></div>`;
+    w.querySelectorAll(".ctabs button").forEach(b=>b.onclick=()=>{st.range=b.dataset.range;renderChart();});}
+  function trend(points){const W=820,H=200,P=30;const xs=i=>P+(W-2*P)*(points.length===1?.5:i/(points.length-1));
+    const sY=v=>H-P-(H-2*P)*((Math.max(300,Math.min(850,v))-300)/550),uY=v=>H-P-(H-2*P)*(Math.max(0,Math.min(100,v))/100);
     const pth=(fn,k)=>points.map((p,i)=>`${i?"L":"M"}${xs(i).toFixed(1)},${fn(p[k]??(k==="score"?300:0)).toFixed(1)}`).join(" ");
-    const sl=pth(sY,"score"),ul=pth(uY,"utilization");
-    const area=`${sl} L ${xs(points.length-1).toFixed(1)},${H-P} L ${xs(0).toFixed(1)},${H-P} Z`;
+    const sl=pth(sY,"score"),ul=pth(uY,"utilization"),area=`${sl} L ${xs(points.length-1).toFixed(1)},${H-P} L ${xs(0).toFixed(1)},${H-P} Z`;
     const dots=points.map((p,i)=>`<circle cx="${xs(i).toFixed(1)}" cy="${sY(p.score??300).toFixed(1)}" r="3.5" fill="var(--accent)"/>`).join("");
-    return `<svg viewBox="0 0 ${W} ${H}"><defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-      <line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="var(--line)"/><path d="${area}" fill="url(#fade)"/>
-      <path d="${ul}" fill="none" stroke="var(--warn)" stroke-width="2" stroke-opacity=".75" stroke-dasharray="5 4"/>
-      <path d="${sl}" fill="none" stroke="var(--accent)" stroke-width="2.6"/>${dots}</svg>`;}
+    return `<svg viewBox="0 0 ${W} ${H}"><defs><linearGradient id="fd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+      <line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="var(--line)"/><path d="${area}" fill="url(#fd)"/>
+      <path d="${ul}" fill="none" stroke="#f0a93b" stroke-width="2" stroke-opacity=".7" stroke-dasharray="5 4"/><path d="${sl}" fill="none" stroke="var(--accent)" stroke-width="2.6"/>${dots}</svg>`;}
 
   // ---- hero demo ----
-  function heroDemo(){$("herodemo").innerHTML=`<span class="tag">example</span>
-    <div class="dn">Chase Freedom Flex</div><div class="dc">Strong match · cash back</div>
-    ${ring(88,130,col(88))}<div class="df">estimated approval odds</div>`;animRings($("herodemo"),0);}
+  function heroDemo(){$("herocard").innerHTML=`${metal(230,146,SCH.chase,"CHASE")}<div class="w" style="color:${oc(88)}">Excellent odds · 88%</div><div class="m">example — estimated approval</div>`;}
 
-  // ---- starfield (subtle brand backdrop; respects reduced-motion) ----
-  (function(){
-    const c=$("stars"); if(!c) return; const ctx=c.getContext("2d");
-    const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const dpr=Math.min(devicePixelRatio||1,2); let w,h,stars=[];
-    function init(){ const n=Math.min(150,Math.floor(innerWidth*innerHeight/15000)); stars=[];
-      for(let i=0;i<n;i++)stars.push({x:Math.random(),y:Math.random(),r:(Math.random()*1.1+.3)*dpr,
-        a:Math.random()*6.28,tw:Math.random()*.015+.004,vy:(Math.random()*.03+.008),
-        c:Math.random()<.35?"#b9caff":"#ffffff"}); }
-    function resize(){ w=c.width=innerWidth*dpr; h=c.height=innerHeight*dpr; c.style.width=innerWidth+"px"; c.style.height=innerHeight+"px"; init(); draw(true); }
-    function draw(stat){ ctx.clearRect(0,0,w,h);
-      for(const s of stars){ s.a+=s.tw; const al=.12+Math.abs(Math.sin(s.a))*.36; ctx.globalAlpha=al; ctx.fillStyle=s.c;
-        ctx.beginPath(); ctx.arc(s.x*w,s.y*h,s.r,0,6.283); ctx.fill();
-        if(!stat&&!reduce){ s.y+=s.vy/innerHeight; if(s.y>1)s.y=0; } }
-      ctx.globalAlpha=1; if(!reduce&&!stat) requestAnimationFrame(()=>draw(false)); }
-    addEventListener("resize",resize); resize(); if(!reduce) draw(false);
-  })();
+  // ---- starfield ----
+  (function(){const c=$("stars");if(!c)return;const ctx=c.getContext("2d");const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;const dpr=Math.min(devicePixelRatio||1,2);let w,h,s=[];
+    function init(){const n=Math.min(140,Math.floor(innerWidth*innerHeight/16000));s=[];for(let i=0;i<n;i++)s.push({x:Math.random(),y:Math.random(),r:(Math.random()*1.1+.3)*dpr,a:Math.random()*6.28,tw:Math.random()*.014+.004,vy:Math.random()*.03+.008,c:Math.random()<.35?"#b9caff":"#fff"});}
+    function resize(){w=c.width=innerWidth*dpr;h=c.height=innerHeight*dpr;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px";init();draw(true);}
+    function draw(stat){ctx.clearRect(0,0,w,h);for(const o of s){o.a+=o.tw;const al=.1+Math.abs(Math.sin(o.a))*.34;ctx.globalAlpha=al;ctx.fillStyle=o.c;ctx.beginPath();ctx.arc(o.x*w,o.y*h,o.r,0,6.283);ctx.fill();if(!stat&&!reduce){o.y+=o.vy/innerHeight;if(o.y>1)o.y=0;}}ctx.globalAlpha=1;if(!reduce&&!stat)requestAnimationFrame(()=>draw(false));}
+    addEventListener("resize",resize);resize();if(!reduce)draw(false);})();
 
-  // ---- RH home modules: category chips + popular carousel ----
-  const CAT_META={starter:["Starter & secured","#3b82f6"],student:["Student","#22c55e"],cash_back:["Cash back","#f0a93b"],travel:["Travel & premium","#a855f7"]};
-  async function ensureCards(){ if(!st.exploreCards){ try{const r=await fetch(API_BASE+"/v1/cards");st.exploreCards=await r.json();}catch(e){st.exploreCards=[];} } }
-  async function renderHomeExtras(){ await ensureCards(); const cards=st.exploreCards||[];
-    const chips=$("cat-chips"); if(chips){ chips.innerHTML=Object.entries(CAT_META).map(([k,[label,c]])=>`<div class="chip" data-cat="${k}"><span class="dot" style="background:${c}"></span>${label}</div>`).join("");
-      chips.querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{$("search").value="";showView("explore");}); }
-    const row=$("popular-row"); if(row){ const pick=["chase_sapphire_preferred","amex_gold","capone_venture_x","discover_it_cashback","chase_freedom_flex","citi_double_cash","wells_active_cash"];
-      const feat=pick.map(id=>cards.find(c=>c.id===id)).filter(Boolean);
-      row.innerHTML=feat.map(c=>`<div class="tile" data-id="${c.id}">
-        <div class="tart">${cardArt({issuer:c.issuer,image_url:c.image_url,card_name:c.name},212,88)}</div>
-        <div class="tn">${esc(c.name)}</div><div class="ts">${esc(((c.features&&c.features.rewards)||"").slice(0,42))}</div></div>`).join("");
-      row.querySelectorAll(".tile").forEach(t=>t.onclick=()=>showView("explore")); } }
+  // ---- legal content (starter templates — review with counsel) ----
+  const LEGAL={
+    privacy:`<h2>Privacy Policy</h2><p class="mt">Last updated 2026 · Bravox (bravoxcredit.com)</p>
+      <div class="tpl">Starter template — not legal advice. A credit/fintech service has heightened obligations (GLBA, CCPA and other state laws, FTC). Have this reviewed by a qualified attorney before relying on it.</div>
+      <h3>What we collect</h3><ul>
+      <li><b>Account data</b> — your email and a securely hashed password.</li>
+      <li><b>Information you enter</b> — credit score, utilization, and inquiries you type in. We do <b>not</b> pull your credit report and never ask for your SSN.</li>
+      <li><b>Activity</b> — your saved checks and any approval outcomes you report, used to improve estimates.</li>
+      <li><b>Technical data</b> — basic log and device information.</li></ul>
+      <h3>How we use it</h3><p>To run the matching tool, save your history, improve our estimates, and — only if you consent — send you emails.</p>
+      <h3>Cookies</h3><p>We use one essential cookie to keep you signed in. Any analytics cookies are optional and set only with your consent via our cookie banner.</p>
+      <h3>Email</h3><p>If you opt in at sign-up, we may send automated emails (tips, updates, your results). Every email includes a one-click unsubscribe, and you can opt out anytime.</p>
+      <h3>Sharing</h3><p>We do not sell your personal information. When you click an Apply link, you are taken to the card issuer or an affiliate partner; we do not pass them the numbers you entered.</p>
+      <h3>Your choices</h3><p>You can request access to, or deletion of, your data, and you can delete your account. Contact us at privacy@bravoxcredit.com.</p>`,
+    terms:`<h2>Terms of Service</h2><p class="mt">Last updated 2026</p>
+      <div class="tpl">Starter template — not legal advice. Review with an attorney before use.</div>
+      <h3>What Bravox is</h3><p>Bravox provides <b>estimated</b> credit-card approval odds for informational purposes. It is not a guarantee of approval, not a credit decision, and not financial, legal, or credit-repair advice. Bravox is not a lender and not a consumer reporting agency.</p>
+      <h3>Soft check only</h3><p>Bravox never performs a hard credit pull and never accesses your real credit report. Estimates are based on information you provide and public underwriting patterns.</p>
+      <h3>Your account</h3><p>Keep your login secure. You are responsible for activity under your account.</p>
+      <h3>Affiliate links</h3><p>Some Apply links are affiliate links; Bravox may earn a commission if you are approved. This never affects your odds or how cards are ranked.</p>
+      <h3>No warranty &amp; liability</h3><p>The service is provided "as is" without warranties. To the extent permitted by law, Bravox is not liable for decisions made based on its estimates.</p>
+      <h3>Changes</h3><p>We may update these terms; continued use means acceptance. Governing law: [your state].</p>`,
+    disc:`<h2>Disclosures</h2>
+      <h3>Advertiser / affiliate disclosure</h3><p>Bravox may receive compensation when you are approved for a card through links on this site. Compensation never influences your estimated approval odds, which cards appear, or how they are ranked. This is how we keep the tool free.</p>
+      <h3>Accuracy of estimates</h3><p>Underwriting thresholds used in our model are informed estimates assembled from public sources, not published issuer cutoffs. Real approval decisions also weigh income, debt-to-income, account history, and internal issuer factors we cannot see. Always verify current card terms with the issuer.</p>`
+  };
+  function setLegal(sec){$("legal-body").innerHTML=LEGAL[sec]||LEGAL.privacy;
+    document.querySelectorAll(".legal .tabs2 button").forEach(b=>b.classList.toggle("on",b.dataset.l===sec));}
+  document.querySelectorAll(".legal .tabs2 button").forEach(b=>b.onclick=()=>setLegal(b.dataset.l));
+  document.querySelectorAll(".footer [data-foot]").forEach(a=>a.onclick=()=>{showView("legal");setLegal(a.dataset.foot);});
+  setLegal("privacy");
 
-  $("promo-x").onclick=()=>$("promo").style.display="none";
-  $("promo-cta").onclick=()=>showView("check");
+  // ---- cookie consent (compliance scaffolding; essential cookie only today) ----
+  (function(){const c=$("cookie");if(!c)return;
+    let choice=null;try{choice=localStorage.getItem("cvx_cookie");}catch(e){}
+    if(!choice)c.classList.add("show");
+    function done(v){try{localStorage.setItem("cvx_cookie",v);}catch(e){}c.classList.remove("show");}
+    $("cookie-acc").onclick=()=>done("all");$("cookie-dec").onclick=()=>done("essential");
+    $("cookie-priv").onclick=()=>{showView("legal");setLegal("privacy");};})();
 
   // ---- boot ----
-  renderNav();heroDemo();renderHomeExtras();
+  renderLogo();renderNav();heroDemo();renderChips();showView("check");
   (async()=>{try{const r=await fetch(API_BASE+"/v1/auth/me");if(r.ok){st.user=await r.json();renderNav();}}catch(e){}})();
 </script>
+<div class="cookie" id="cookie"><p>We use an essential cookie to keep you signed in, and — only with your consent — analytics to improve Bravox. See our <a id="cookie-priv">Privacy Policy</a>.</p>
+  <div class="acts"><button class="dec" id="cookie-dec">Essential only</button><button class="acc" id="cookie-acc">Accept all</button></div></div>
 </body>
 </html>
